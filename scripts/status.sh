@@ -51,10 +51,11 @@ else
   [ -x "$ADB" ] && fail "No emulator running — scripts/emulator-start.sh"
 fi
 
-# --- Docker ------------------------------------------------------------------------
+# --- Container runtime (Docker Desktop or Kiri) -----------------------------------
 if ! command -v docker >/dev/null || ! docker info >/dev/null 2>&1; then
-  fail "Docker Desktop not running"
+  fail "$RUNTIME_NAME not running (CONTAINER_RUNTIME=$CONTAINER_RUNTIME)"
 else
+  pass "Container runtime: $RUNTIME_NAME ($(docker info -f '{{.NCPU}} CPUs, server {{.ServerVersion}}' 2>/dev/null))"
   docker image inspect "$IMAGE_NAME" >/dev/null 2>&1 && pass "Image $IMAGE_NAME built" || fail "Image missing — scripts/setup.sh"
   if container_running; then
     mounted="$(docker inspect -f '{{range .Mounts}}{{if eq .Destination "/workspace"}}{{.Source}}{{end}}{{end}}' "$CONTAINER_NAME")"
