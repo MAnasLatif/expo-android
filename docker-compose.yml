@@ -1,0 +1,95 @@
+# =============================================================================
+# Expo Emulator — Docker Compose
+#
+# Networking model (Docker Desktop for Mac):
+#   container adb client ──tcp──> host.docker.internal:5037 ──> macOS adb server ──> emulator
+#   emulator ──adb reverse tcp:8081──> macOS 127.0.0.1:8081 ──published port──> Metro in container
+#
+# `localhost` inside the container is the container itself, never macOS.
+# All values come from .env (copy .env.example). The scripts in scripts/ also
+# load config/versions.env so build args always match the pinned versions.
+# =============================================================================
+name: expoemu
+
+services:
+  app:
+    image: expoemu:local
+    container_name: expoemu
+    platform: ${DOCKER_PLATFORM:-linux/amd64}
+    build:
+      context: .
+      # Defaults mirror config/versions.env (CI checks they stay in sync).
+      args:
+        UBUNTU_VERSION: ${UBUNTU_VERSION:-24.04}
+        JDK_VERSION: ${JDK_VERSION:-17}
+        NODE_VERSION: ${NODE_VERSION:-24.22.3}
+        BUN_VERSION: ${BUN_VERSION:-1.4.4}
+        CMDLINE_TOOLS_BUILD: ${CMDLINE_TOOLS_BUILD:-16111833}
+        CMDLINE_TOOLS_LINUX_SHA1: ${CMDLINE_TOOLS_LINUX_SHA1:-e025545c62a8e64c7559119566a569fb1dec5f60}
+        PLATFORM_TOOLS_VERSION: ${PLATFORM_TOOLS_VERSION:-37.0.3}
+        PLATFORM_TOOLS_LINUX_SHA1: ${PLATFORM_TOOLS_LINUX_SHA1:-e1579b288a7ae4e9bc28dedec6a154d78b3c04ed}
+        ANDROID_EXTRA_PACKAGES: ${ANDROID_EXTRA_PACKAGES:-}
+      labels:
+        com.expoemu.managed: "true"
+    labels:
+      com.expoemu.managed: "true"
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+    environment:
+      # Point the container's adb client at the macOS adb server.
+      ADB_SERVER_SOCKET: tcp:host.docker.internal:${ADB_SERVER_PORT:-5037}
+      # Bundle URLs use 127.0.0.1; the emulator reaches it via `adb reverse`.
+      REACT_NATIVE_PACKAGER_HOSTNAME: 127.0.0.1
+      RCT_METRO_PORT: ${METRO_PORT:-8081}
+      METRO_PORT: ${METRO_PORT:-8081}
+      # Polling fallback for file watching on bind mounts (Fast Refresh).
+      CHOKIDAR_USEPOLLING: ${WATCH_POLLING:-false}
+      WATCHPACK_POLLING: ${WATCH_POLLING:-false}
+      SCREENSHOT_DIR: ${SCREENSHOT_DIR:-.android-screenshots}
+    ports:
+      # Bound to 127.0.0.1 only — Metro is not exposed to your network.
+      - "127.0.0.1:${METRO_PORT:-8081}:${METRO_PORT:-8081}"
+    extra_hosts:
+      # Built in on Docker Desktop; makes the same name work on Linux hosts.
+      - "host.docker.internal:host-gateway"
+    volumes:
+      # Your project: mounted, never copied. Edits on macOS are live in Metro.
+      - type: bind
+        source: ${PROJECT_DIR:?Set PROJECT_DIR in .env or run scripts/start.sh /path/to/app}
+        target: /workspace
+      # Linux node_modules kept in a per-project volume so native binaries
+      # (esbuild, lightningcss, ...) never clash with a macOS node_modules.
+      - node_modules:/workspace/node_modules
+      # Shared caches survive `docker compose down` → fast restarts.
+      - bun-cache:/home/expo/.bun
+      - expo-home:/home/expo/.expo
+      - gradle-cache:/home/expo/.gradle
+      - xdg-cache:/home/expo/.cache
+    deploy:
+      resources:
+        limits:
+          cpus: "${CONTAINER_CPUS:-4}"
+          memory: ${CONTAINER_MEMORY:-6g}
+
+volumes:
+  node_modules:
+    name: expoemu_node_modules_${PROJECT_SLUG:-default}
+    labels:
+      com.expoemu.managed: "true"
+  bun-cache:
+    name: expoemu_bun-cache
+    labels:
+      com.expoemu.managed: "true"
+  expo-home:
+    name: expoemu_expo-home
+    labels:
+      com.expoemu.managed: "true"
+  gradle-cache:
+    name: expoemu_gradle-cache
+    labels:
+      com.expoemu.managed: "true"
+  xdg-cache:
+    name: expoemu_xdg-cache
+    labels:
+      com.expoemu.managed: "true"
