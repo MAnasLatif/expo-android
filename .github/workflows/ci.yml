@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  # Lint every shell script (host + container side).
+  shellcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: ShellCheck
+        run: shellcheck -x -S warning scripts/*.sh scripts/lib/*.sh docker/*.sh
+
+  # Dockerfile / compose defaults must match config/versions.env.
+  versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify pinned versions are in sync
+        run: scripts/check-versions.sh --verify-sync
+
+  # Compose file is valid and the image builds for linux/amd64.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate docker-compose.yml
+        run: PROJECT_DIR="$PWD" docker compose --env-file config/versions.env config --quiet
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: expoemu:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Smoke test toolchain
+        run: |
+          docker run --rm expoemu:ci bash -c '
+            set -e
+            test "$(whoami)" = expo
+            java -version
+            node --version
+            bun --version
+            adb version
+          '
