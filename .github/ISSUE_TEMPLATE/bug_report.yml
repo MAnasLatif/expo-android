@@ -23,11 +23,18 @@ body:
       options: [Intel (x86_64), Apple Silicon (arm64)]
     validations:
       required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Container runtime (CONTAINER_RUNTIME)
+      options: [Docker Desktop (docker), Kiri (kiri)]
+    validations:
+      required: true
   - type: input
     id: versions
     attributes:
-      label: macOS and Docker Desktop versions
-      placeholder: macOS 15.7, Docker Desktop 4.x
+      label: macOS and container runtime versions
+      placeholder: macOS 15.7, Docker Desktop 4.x / Kiri 0.2.1
     validations:
       required: true
   - type: textarea

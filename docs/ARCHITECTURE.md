@@ -81,6 +81,20 @@ directly. The container has a JDK for Gradle and native builds.
 | `scripts/cleanup.sh --caches` | all env volumes | image, SDK |
 | `scripts/cleanup.sh --all` | everything this project created | your projects |
 
+## Container runtimes
+
+The container side works with any engine that speaks the Docker Engine API
+and provides `host.docker.internal` → host loopback:
+
+| `CONTAINER_RUNTIME` | Engine | How the scripts reach it |
+|---------------------|--------|--------------------------|
+| `docker` (default) | Docker Desktop | current docker context |
+| `kiri` (optional) | [Kiri](https://runkiri.com) | `DOCKER_HOST=unix://$KIRI_SOCKET`, set inside the scripts only |
+
+The runtime is chosen in `scripts/lib/common.sh` (`select_runtime`). Nothing
+global is changed: no `docker context use`, no edits to
+`~/.docker/config.json`, and Kiri is never installed by this repo.
+
 ## Apple Silicon
 
 The emulator and system image are native arm64 (`arm64-v8a`). Google only

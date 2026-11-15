@@ -6,6 +6,17 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Optional [Kiri](https://runkiri.com) container runtime
+  (`CONTAINER_RUNTIME=kiri` or `scripts/setup.sh --runtime kiri`). Docker
+  Desktop stays the default. The global docker context is never changed.
+
+### Fixed
+
+- `scripts/start.sh` caps `CONTAINER_CPUS` to the engine's CPU count instead
+  of failing on small VMs.
+
 ## [0.1.0] - 2026-11-15
 
 ### Added
