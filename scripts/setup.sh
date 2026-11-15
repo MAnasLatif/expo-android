@@ -3,7 +3,11 @@
 # First-time setup (idempotent — safe to re-run).
 #
 #   scripts/setup.sh [--project /path/to/expo-app] [--accept-licenses]
+#                    [--runtime docker|kiri]
 #                    [--skip-sdk] [--skip-docker] [--recreate-avd]
+#
+# --runtime kiri  use Kiri (https://runkiri.com) instead of Docker Desktop.
+#                 Optional; install Kiri yourself first. Saved to .env.
 #
 # On macOS it installs ONLY into $ENV_HOME (default ~/.expo-android-env):
 #   sdk/platform-tools   pinned adb (same version as the container)
@@ -17,15 +21,18 @@
 source "$(dirname "$0")/lib/common.sh"
 
 # --- Arguments ---------------------------------------------------------------
-ARG_PROJECT="" ACCEPT_LICENSES="${ACCEPT_ANDROID_LICENSES:-no}" SKIP_SDK=0 SKIP_DOCKER=0 RECREATE_AVD=0
+ARG_PROJECT="" ARG_RUNTIME="" ACCEPT_LICENSES="${ACCEPT_ANDROID_LICENSES:-no}" SKIP_SDK=0 SKIP_DOCKER=0 RECREATE_AVD=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --project) ARG_PROJECT="$2"; shift 2 ;;
+    --runtime)
+      case "${2:-}" in docker|kiri) ARG_RUNTIME="$2" ;; *) die "--runtime must be 'docker' or 'kiri'" ;; esac
+      shift 2 ;;
     --accept-licenses) ACCEPT_LICENSES=yes; shift ;;
     --skip-sdk) SKIP_SDK=1; shift ;;
     --skip-docker) SKIP_DOCKER=1; shift ;;
     --recreate-avd) RECREATE_AVD=1; shift ;;
-    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
     *) die "Unknown option: $1 (see --help)" ;;
   esac
 done
@@ -43,6 +50,17 @@ if [ -n "$ARG_PROJECT" ]; then
   # Rewrite the PROJECT_DIR= line in place (BSD sed syntax for macOS).
   sed -i '' "s|^PROJECT_DIR=.*|PROJECT_DIR=$abs|" "$ENV_FILE"
   ok "PROJECT_DIR set to $abs"
+fi
+if [ -n "$ARG_RUNTIME" ]; then
+  # Replace the line, or append it for .env files created before this option.
+  if grep -q '^CONTAINER_RUNTIME=' "$ENV_FILE"; then
+    sed -i '' "s|^CONTAINER_RUNTIME=.*|CONTAINER_RUNTIME=$ARG_RUNTIME|" "$ENV_FILE"
+  else
+    printf '\nCONTAINER_RUNTIME=%s\n' "$ARG_RUNTIME" >> "$ENV_FILE"
+  fi
+  ok "Container runtime set to $ARG_RUNTIME"
+  # A one-off CONTAINER_RUNTIME in the shell would otherwise override .env.
+  export CONTAINER_RUNTIME="$ARG_RUNTIME"
 fi
 load_config
 mkdir -p "$SDK_DIR" "$AVD_HOME" "$LOG_DIR" "$RUN_DIR" "$ANDROID_USER_HOME" "$ENV_HOME/downloads"
