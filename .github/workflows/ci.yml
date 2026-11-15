@@ -13,7 +13,7 @@ jobs:
   shellcheck:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: ShellCheck
         run: shellcheck -x -S warning scripts/*.sh scripts/lib/*.sh docker/*.sh
 
@@ -21,7 +21,7 @@ jobs:
   cli:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
@@ -39,7 +39,7 @@ jobs:
   versions:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify pinned versions are in sync
         run: scripts/check-versions.sh --verify-sync
 
@@ -47,7 +47,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Validate docker-compose.yml
         run: PROJECT_DIR="$PWD" docker compose --env-file config/versions.env config --quiet
       - uses: docker/setup-buildx-action@v4
