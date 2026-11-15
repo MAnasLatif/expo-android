@@ -63,6 +63,30 @@ Reinstall the Linux node_modules with
 `scripts/open-app.sh --reinstall` downloads the Expo Go build for the
 project's `expo` version.
 
+## Kiri (optional runtime)
+
+**"Kiri is not running (no socket at …)".**
+Open Kiri.app. If Kiri is installed somewhere non-standard, set
+`KIRI_SOCKET` in `.env` to its Docker API socket.
+
+**"Kiri needs Apple Rosetta for linux/amd64 images".**
+Run `softwareupdate --install-rosetta`. Kiri runs amd64 images only through
+Rosetta on Apple Silicon.
+
+**Container refused: "range of CPUs is from 0.01 to 2.00".**
+Kiri's VM defaults to 2 CPUs. `scripts/start.sh` caps `CONTAINER_CPUS`
+automatically. If you run `docker compose` directly, lower `CONTAINER_CPUS`
+or give the VM more CPUs in `~/.kiri/vm.json`.
+
+**Image or volumes "missing" after switching runtimes.**
+Kiri and Docker Desktop keep separate images and volumes. Run
+`scripts/setup.sh --runtime kiri --skip-sdk` once to build the image on Kiri.
+
+**Fast Refresh doesn't react on Kiri.**
+Kiri doesn't document whether file-change events propagate through its
+virtiofs sharing. Check `scripts/expo.sh --logs`, then open an issue with your
+Kiri version (`kiri update --check`).
+
 ## Docker
 
 **`PROJECT_DIR` error from docker compose.**

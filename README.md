@@ -27,7 +27,9 @@ Mac** without installing Android Studio, Java or the Android SDK system-wide.
 ## Requirements
 
 - macOS 13+ on **Intel or Apple Silicon**
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/), or
+  optionally [Kiri](https://runkiri.com), a lightweight Docker-compatible
+  runtime (see [Using Kiri](#optional-using-kiri-instead-of-docker-desktop))
 - About 10 GB free disk space (SDK and system image ~6 GB, AVD data ~2 GB,
   Docker image ~0.6 GB, plus `node_modules` volumes)
 - An Expo project that uses **Expo Go**
@@ -107,7 +109,8 @@ repo changes your agent's configuration.
 | `ENV_HOME` | `~/.expoemu` | Isolated SDK, AVD, logs |
 | `AVD_RAM_MB` / `AVD_CORES` | `4096` / `4` | Emulator resources |
 | `EMULATOR_GPU` | `host` | `swiftshader_indirect` for software rendering |
-| `CONTAINER_CPUS` / `CONTAINER_MEMORY` | `4` / `6g` | Docker limits |
+| `CONTAINER_RUNTIME` | `docker` | `docker` (Docker Desktop) or `kiri` (optional) |
+| `CONTAINER_CPUS` / `CONTAINER_MEMORY` | `4` / `6g` | Container limits (CPUs capped to what the engine has) |
 | `METRO_PORT` / `ADB_SERVER_PORT` | `8081` / `5037` | Ports |
 | `WATCH_POLLING` | `false` | Set `true` if Fast Refresh misses file changes |
 
@@ -123,6 +126,38 @@ volume, and Bun/Expo/Gradle caches are shared.
 > macOS `node_modules`. Add packages with `scripts/shell.sh bun add <pkg>`.
 > If your editor needs type definitions, you can also run `bun install` on
 > macOS. The two copies don't interfere.
+
+## Optional: using Kiri instead of Docker Desktop
+
+[Kiri](https://runkiri.com) is a small, fast container runtime that speaks
+the Docker Engine API. It's **entirely optional**. Docker Desktop stays the
+default, and this repo never installs Kiri or changes your Docker settings.
+
+1. Install Kiri yourself by following [its docs](https://docs.runkiri.com/install/).
+   It needs macOS 14 or newer. On Apple Silicon it also needs Apple Rosetta
+   (`softwareupdate --install-rosetta`), because the container image is
+   `linux/amd64`.
+2. Switch this environment to Kiri:
+
+   ```bash
+   scripts/setup.sh --runtime kiri --skip-sdk   # saves CONTAINER_RUNTIME=kiri, builds the image on Kiri
+   ```
+
+3. Use every other command as usual. `scripts/status.sh` shows
+   `Container runtime: Kiri`.
+
+How it works: the scripts set `DOCKER_HOST=unix://~/.kiri/run/docker.sock`
+for their own process only. Your global `docker context` stays as it is, so
+`docker ps` in your terminal still talks to whatever you normally use. Images
+and volumes are separate per runtime. Switching back with
+`--runtime docker` uses Docker Desktop's copies, and `cleanup.sh` acts on the
+active runtime.
+
+> **Status:** the adb and Metro networking relies on features Kiri
+> documents (`host.docker.internal` → the Mac's loopback, and
+> `-p 127.0.0.1:…`). The maintainers haven't yet run the full flow on a real
+> Kiri install. Kiri doesn't document whether file-change events cross its
+> file sharing, which Fast Refresh needs. Please report your results in an issue.
 
 ## Cleanup and uninstall
 
