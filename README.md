@@ -1,7 +1,7 @@
 # Expo Emulator (`expoemu`)
 
 [![npm](https://img.shields.io/npm/v/expoemu.svg)](https://www.npmjs.com/package/expoemu)
-[![CI](https://github.com/OWNER/expoemu/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
+[![CI](https://github.com/MAnasLatif/expoemu/actions/workflows/ci.yml/badge.svg)](https://github.com/MAnasLatif/expoemu/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Run and test **Expo / React Native apps on a real Android emulator on your
@@ -233,7 +233,7 @@ resources and other Android SDKs are never touched.
 ## From source (contributors)
 
 ```bash
-git clone https://github.com/OWNER/expoemu.git && cd expoemu
+git clone https://github.com/MAnasLatif/expoemu.git && cd expoemu
 scripts/setup.sh --project ~/code/my-expo-app
 ```
 

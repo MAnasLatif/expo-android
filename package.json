@@ -16,13 +16,13 @@
   ],
   "license": "MIT",
   "author": "M Anas Latif",
-  "homepage": "https://github.com/OWNER/expoemu#readme",
+  "homepage": "https://github.com/MAnasLatif/expoemu#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OWNER/expoemu.git"
+    "url": "git+https://github.com/MAnasLatif/expoemu.git"
   },
   "bugs": {
-    "url": "https://github.com/OWNER/expoemu/issues"
+    "url": "https://github.com/MAnasLatif/expoemu/issues"
   },
   "bin": {
     "expoemu": "bin/expoemu.js"
