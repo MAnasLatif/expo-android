@@ -1,32 +1,126 @@
-# Publish the `expoemu` package to npm when a version tag is pushed:
-#   npm version patch   # bumps package.json and creates tag vX.Y.Z
-#   git push --follow-tags
-# Requires the repository secret NPM_TOKEN (npm automation token).
+# =============================================================================
+# Release: push a version tag on ANY commit → publish `expoemu` to npm and create
+# a GitHub Release. The tag decides the version; package.json is not edited.
+#
+#   git tag v0.1.0 && git push origin v0.1.0          → expoemu@0.1.0       (npm tag: latest)
+#   git tag v0.2.0-beta.1 && git push origin v0.2.0-beta.1
+#                                                     → expoemu@0.2.0-beta.1 (npm tag: beta)
+#   v1.0.0-rc.2 → rc, v1.0.0-alpha.1 → alpha, v1.0.0-next.3 → next
+#
+#   Users install a pre-release with:  npx expoemu@beta …   /  npm i -D expoemu@beta
+#
+# Required repository secret: NPM_TOKEN (npm access token with publish rights).
+# =============================================================================
 name: Release
 
 on:
   push:
-    tags: ["v*.*.*"]
+    tags: ["v*"]
 
 permissions:
-  contents: read
-  id-token: write   # npm provenance (links the package to this workflow run)
+  contents: write   # create the GitHub Release
+  id-token: write   # npm provenance: links the package to this workflow run
+
+# Never publish the same tag twice in parallel.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   publish:
+    name: Publish to npm
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
-      - name: Tag must match package.json version
+
+      # --- 1. Preconditions ---------------------------------------------------
+      - name: Check NPM_TOKEN secret
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          pkg="v$(node -p "require('./package.json').version")"
-          [ "$pkg" = "$GITHUB_REF_NAME" ] || { echo "tag $GITHUB_REF_NAME != package.json $pkg"; exit 1; }
-      - run: npm test
-      - name: Publish
-        run: npm publish --provenance --access public
+          if [ -z "$NPM_TOKEN" ]; then
+            echo "::error::Repository secret NPM_TOKEN is not set (Settings → Secrets and variables → Actions)."
+            exit 1
+          fi
+
+      # --- 2. Derive the package variant from the tag ------------------------------
+      - name: Version and npm dist-tag from git tag
+        id: v
+        run: |
+          tag="$GITHUB_REF_NAME"
+          version="${tag#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$ ]]; then
+            echo "::error::Tag '$tag' is not a version tag like v1.2.3 or v1.2.3-beta.1"
+            exit 1
+          fi
+          if [[ "$version" == *-* ]]; then
+            pre="${version#*-}"; channel="${pre%%.*}"
+            # npm dist-tags must not look like versions (e.g. v1.0.0-1 → next).
+            [[ "$channel" =~ ^[0-9] ]] && channel=next
+            prerelease=true
+          else
+            channel=latest; prerelease=false
+          fi
+          {
+            echo "version=$version"
+            echo "channel=$channel"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+          echo "Publishing expoemu@$version to npm dist-tag '$channel' (prerelease: $prerelease)"
+
+      - name: Refuse to republish an existing version
+        run: |
+          if npm view "expoemu@${{ steps.v.outputs.version }}" version >/dev/null 2>&1; then
+            echo "::error::expoemu@${{ steps.v.outputs.version }} is already on npm. Versions are immutable — use a new tag."
+            exit 1
+          fi
+
+      - name: Set package.json version (build only, not committed)
+        run: npm version "${{ steps.v.outputs.version }}" --no-git-tag-version --allow-same-version
+
+      # --- 3. Verify -------------------------------------------------------------------
+      - name: Unit tests
+        run: npm test
+
+      - name: Lint shell scripts
+        run: shellcheck -x -S warning scripts/*.sh scripts/lib/*.sh docker/*.sh
+
+      - name: Pinned versions in sync
+        run: scripts/check-versions.sh --verify-sync
+
+      - name: Build package tarball
+        id: pack
+        run: |
+          file="$(npm pack --silent)"
+          tar -tzf "$file" | grep -q 'package/scripts/lib/common.sh'
+          if tar -tzf "$file" | grep -qx 'package/.env'; then echo "::error::.env must never be published"; exit 1; fi
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+
+      # --- 4. Publish --------------------------------------------------------------------
+      - name: Publish to npm
+        run: npm publish "${{ steps.pack.outputs.file }}" --provenance --access public --tag "${{ steps.v.outputs.channel }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          args=(--verify-tag --generate-notes --title "expoemu ${{ steps.v.outputs.version }}")
+          [ "${{ steps.v.outputs.prerelease }}" = true ] && args+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" "${{ steps.pack.outputs.file }}" "${args[@]}"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Published expoemu@${{ steps.v.outputs.version }}"
+            echo ""
+            echo "- npm dist-tag: \`${{ steps.v.outputs.channel }}\`"
+            echo "- Install: \`npm i -D expoemu@${{ steps.v.outputs.version }}\`"
+            echo "- https://www.npmjs.com/package/expoemu/v/${{ steps.v.outputs.version }}"
+          } >> "$GITHUB_STEP_SUMMARY"
