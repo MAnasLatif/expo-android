@@ -17,6 +17,14 @@
 #   tap-text "Sign in"           tap an element
 #   long-press-text "Item" [ms]  long-press an element
 #   scroll-to "Row 30" [--up] [--max N]   scroll until the element is visible
+#   texts                        list visible text only (compact)
+#   ui --xml                     save the raw view hierarchy XML, print its path
+#
+# WAIT & ASSERT (exit 0 = success, 1 = failure — usable as test steps)
+#   wait-for "Welcome" [--timeout S]      wait until an element appears (default 15 s)
+#   wait-gone "Loading" [--timeout S]     wait until an element disappears
+#   assert-text "Welcome"                 fail unless the element is on screen
+#   assert-no-text "Error"                fail if the element is on screen
 #
 # KEYBOARD & KEYS
 #   text "hello world"           type into the focused field
@@ -41,7 +49,7 @@ source "$(dirname "$0")/lib/common.sh"
 load_config
 
 cmd="${1:-help}"; shift || true
-case "$cmd" in help|-h|--help) sed -n '2,41p' "$0"; exit 0 ;; esac
+case "$cmd" in help|-h|--help) sed -n '2,/^# =====*$/p' "$0"; exit 0 ;; esac
 require_device
 sh() { adb_host shell "$@"; }
 
@@ -178,8 +186,17 @@ case "$cmd" in
 
   # --- Elements ---------------------------------------------------------------
   ui)
+    if [ "${1:-}" = "--xml" ]; then
+      sh uiautomator dump /sdcard/window_dump.xml >/dev/null 2>&1 || die "uiautomator dump failed"
+      file="$(screenshot_dir)/ui-$(date +%Y%m%d-%H%M%S).xml"
+      adb_host exec-out cat /sdcard/window_dump.xml > "$file"
+      printf '%s\n' "$file"; exit 0
+    fi
     echo "# centerX centerY | text | content-desc | testID | class | flags"
     ui_rows ;;
+  texts)
+    # Visible strings only (text or accessibility label), de-duplicated.
+    ui_rows | awk -F' \\| ' '{ s = length($2) ? $2 : $3; if (length(s) && !seen[s]++) print s }' ;;
   find)       [ $# -ge 1 ] || die "usage: find \"text\""; need_xy "$*" ;;
   tap-text)
     [ $# -ge 1 ] || die "usage: tap-text \"text\""
@@ -205,6 +222,32 @@ case "$cmd" in
       [ "$i" -lt "$max" ] && bash "$0" scroll "$dir" && sleep 0.4
     done
     die "\"$needle\" not found after $max scrolls" ;;
+
+  # --- Wait & assert ------------------------------------------------------------
+  wait-for|wait-gone)
+    [ $# -ge 1 ] || die "usage: $cmd \"text\" [--timeout SECONDS]"
+    needle="$1"; shift; timeout=15
+    while [ $# -gt 0 ]; do
+      case "$1" in --timeout) timeout="$2"; shift ;; *) die "unknown option: $1" ;; esac; shift
+    done
+    deadline=$((SECONDS + timeout))
+    while :; do
+      if xy="$(find_xy "$needle")"; then
+        [ "$cmd" = wait-for ] && { echo "$xy"; exit 0; }
+      else
+        [ "$cmd" = wait-gone ] && { ok "\"$needle\" is gone"; exit 0; }
+      fi
+      [ "$SECONDS" -ge "$deadline" ] && break
+      sleep 0.5
+    done
+    if [ "$cmd" = wait-for ]; then die "Timed out after ${timeout}s waiting for \"$needle\""
+    else die "Timed out after ${timeout}s: \"$needle\" is still on screen"; fi ;;
+  assert-text)
+    [ $# -ge 1 ] || die "usage: assert-text \"text\""
+    if xy="$(find_xy "$*")"; then ok "Found \"$*\" at $xy"; else die "Assertion failed: \"$*\" is not on screen"; fi ;;
+  assert-no-text)
+    [ $# -ge 1 ] || die "usage: assert-no-text \"text\""
+    if xy="$(find_xy "$*")"; then die "Assertion failed: \"$*\" is on screen at $xy"; else ok "\"$*\" is not on screen"; fi ;;
 
   # --- Keyboard & keys --------------------------------------------------------
   text)       [ $# -ge 1 ] || die "usage: text \"string\""; type_text "$*" ;;
