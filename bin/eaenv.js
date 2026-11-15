@@ -24,10 +24,20 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 
 // --- Command table --------------------------------------------------------------
 // script: file in scripts/; prefix: args inserted before the user's args.
-const DEVICE_CMDS = [
-  'tap', 'swipe', 'scroll', 'text', 'key', 'back', 'home', 'ui', 'find',
-  'tap-text', 'logcat', 'reload', 'devmenu', 'open-url', 'activity', 'size', 'adb',
+// Each list below forwards `eaenv <cmd> …` to `<script> <cmd> …`.
+const DEVICE_CMDS = [ // scripts/device.sh — touch, elements, waits, keys
+  'tap', 'double-tap', 'long-press', 'swipe', 'drag', 'scroll',
+  'ui', 'texts', 'find', 'tap-text', 'long-press-text', 'scroll-to',
+  'wait-for', 'wait-gone', 'assert-text', 'assert-no-text',
+  'text', 'clear', 'fill', 'hide-keyboard', 'key', 'back', 'home', 'recents',
+  'enter', 'lock', 'unlock',
+  'logcat', 'reload', 'devmenu', 'open-url', 'activity', 'size', 'adb',
 ];
+const SYSTEM_CMDS = [ // scripts/system.sh — device state, capture, info
+  'rotate', 'dark-mode', 'font-scale', 'animations', 'network', 'airplane',
+  'location', 'battery', 'notifications', 'permission', 'locale', 'record', 'info',
+];
+const APP_CMDS = ['app', 'crash', 'perf', 'memory']; // scripts/app.sh
 
 const COMMANDS = {
   setup:            { script: 'setup.sh' },
@@ -44,13 +54,16 @@ const COMMANDS = {
   down:             { script: 'stop.sh', prefix: ['--all'] },
 };
 for (const c of DEVICE_CMDS) COMMANDS[c] = { script: 'device.sh', prefix: [c] };
+for (const c of SYSTEM_CMDS) COMMANDS[c] = { script: 'system.sh', prefix: [c] };
+for (const c of APP_CMDS) COMMANDS[c] = { script: 'app.sh', prefix: [c] };
 
 const HELP = `eaenv ${pkg.version} — Expo Android ENVironment
 
 Run an Expo app on a native Android emulator (macOS) with the toolchain in
 Docker. Run commands from your Expo project folder.
+"Text" selectors match visible text, accessibilityLabel, testID or placeholder.
 
-Setup & lifecycle
+SETUP & LIFECYCLE
   setup [--runtime docker|kiri] [--accept-licenses]   one-time install
   up [--headless] [--no-animations] [--cold-boot]     phone + container + Metro + open app
   down                                                stop container, emulator, adb
@@ -62,17 +75,43 @@ Setup & lifecycle
   shell [cmd…]                                        shell / command inside the container
   cleanup --project|--caches|--image|--sdk|--all      scoped removal (asks first)
 
-Device control (great for AI assistants)
-  screenshot [name]            save PNG to ./.android-screenshots, print its path
-  ui                           list on-screen elements with tap coordinates
-  tap X Y | tap-text "Text"    tap by pixels or by visible text
-  find "Text"                  print the center "X Y" of an element
-  swipe X1 Y1 X2 Y2 [ms]       swipe;  scroll down|up
-  text "hello"                 type text;  key BACK|HOME|ENTER…;  back;  home
-  logcat [--errors|--all] [-n N] [--follow] [--clear]
-  reload | devmenu | open-url URL | activity | size | adb ARGS…
+SEE THE SCREEN
+  screenshot [name]                 PNG in ./.android-screenshots, prints its path
+  record [SECONDS] [name]           MP4 screen recording (max 180 s)
+  ui [--xml]                        elements with tap coordinates (or raw XML)
+  texts                             visible text only
+  find "Text"                       center "X Y" of an element
 
-Other
+TOUCH
+  tap X Y | double-tap X Y | long-press X Y [ms]
+  tap-text "Text" | long-press-text "Text" [ms]
+  swipe X1 Y1 X2 Y2 [ms] | drag X1 Y1 X2 Y2 [ms]
+  scroll down|up|left|right | scroll-to "Text" [--up] [--max N]
+
+TYPE & KEYS
+  fill "Field" "value" [--keep-keyboard]   tap field, clear, type, hide keyboard
+  text "hello" | clear | hide-keyboard
+  key NAME|CODE | back | home | recents | enter | lock | unlock
+
+WAIT & ASSERT (exit 0 = pass, 1 = fail)
+  wait-for "Text" [--timeout S] | wait-gone "Text" [--timeout S]
+  assert-text "Text" | assert-no-text "Text"
+
+DEVICE STATE
+  rotate portrait|landscape|auto | dark-mode on|off | font-scale 1.3|reset
+  animations on|off | network on|off | airplane on|off
+  location LAT LON | battery LEVEL|unplug|charge|reset
+  notifications open|close|settings
+  permission grant|revoke|list [PERM] [PKG] | locale TAG|reset [PKG]
+  info                              device summary
+
+APP & DEBUGGING
+  app launch|stop|restart|clear|install|uninstall|list|info [PKG]
+  logcat [--errors|--all] [-n N] [--follow] [--clear] | crash [-n N]
+  perf [--reset] | memory | reload | devmenu | open-url URL | activity | size
+  adb ARGS…                         raw adb against the emulator
+
+OTHER
   check-versions [--verify-sync]   compare pinned tool versions with upstream
   help | --version
 
@@ -157,4 +196,4 @@ if (require.main === module) {
   process.exitCode = main(process.argv.slice(2));
 }
 
-module.exports = { COMMANDS, main };
+module.exports = { COMMANDS, HELP, main };

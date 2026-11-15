@@ -44,6 +44,25 @@ test('every command maps to an existing script', () => {
   }
 });
 
+test('help documents every command', () => {
+  const { HELP } = require('../bin/eaenv.js');
+  for (const name of Object.keys(COMMANDS)) {
+    if (name === 'doctor' || name === 'check-versions') continue; // aliases/maintenance
+    assert.ok(HELP.includes(name), `help is missing "${name}"`);
+  }
+});
+
+test('every routed command is handled by its script', () => {
+  // A command forwarded to device/system/app.sh must appear in that script's
+  // case statement, otherwise users get "Unknown command" at runtime.
+  for (const [name, { script, prefix }] of Object.entries(COMMANDS)) {
+    if (!prefix || prefix[0] !== name) continue;
+    const src = fs.readFileSync(path.join(ROOT, 'scripts', script), 'utf8');
+    const handled = new RegExp(`^\\s*(?:[\\w-]+\\|)*${name.replace(/-/g, '\\-')}(?:\\|[\\w-]+)*\\)`, 'm');
+    assert.match(src, handled, `${script} has no case for "${name}"`);
+  }
+});
+
 test('package "files" ships everything the scripts need at runtime', () => {
   for (const f of ['bin/', 'scripts/', 'docker/', 'config/', 'Dockerfile', 'docker-compose.yml', '.env.example']) {
     assert.ok(pkg.files.includes(f), `package.json files is missing ${f}`);
