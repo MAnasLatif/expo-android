@@ -1,0 +1,25 @@
+# --- Local configuration (copy .env.example -> .env) ---
+.env
+.env.*
+!.env.example
+
+# --- Never commit SDK binaries, AVDs or downloads ---
+.sdk/
+sdk/
+avd/
+downloads/
+*.zip
+*.apk
+*.aab
+
+# --- Generated artifacts ---
+.android-screenshots/
+*.log
+logs/
+tmp/
+
+# --- OS / editor noise ---
+.DS_Store
+.vscode/
+.idea/
+*.swp
