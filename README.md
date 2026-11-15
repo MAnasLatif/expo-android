@@ -78,19 +78,75 @@ npx eaenv up
 | `npx eaenv shell [cmd…]` | Shell or command in the container, e.g. `npx eaenv shell bun add zod` |
 | `npx eaenv cleanup …` | Scoped removal: `--project`, `--caches`, `--image`, `--sdk`, `--all` |
 
-**Device control:**
+### Device actions
+
+In the commands below, a `"Text"` selector matches **visible text,
+`accessibilityLabel`, `testID` or a TextInput `placeholder`**. An exact match
+wins over a partial one.
+
+**See the screen**
 
 | Command | What it does |
 |---------|--------------|
-| `npx eaenv screenshot [name]` | Save a PNG to `./.android-screenshots/` and print its path |
-| `npx eaenv ui` | List on-screen elements with tap coordinates |
-| `npx eaenv tap X Y` · `tap-text "Sign in"` · `find "Sign in"` | Tap by pixels or by visible text |
-| `npx eaenv swipe X1 Y1 X2 Y2` · `scroll down\|up` | Gestures |
-| `npx eaenv text "hello"` · `key ENTER` · `back` · `home` | Typing and keys |
-| `npx eaenv logcat [--errors\|--all] [-n N]` | App logs (`ReactNativeJS`) or errors |
-| `npx eaenv reload` · `devmenu` · `open-url URL` · `adb …` | Misc |
+| `screenshot [name]` | PNG in `./.android-screenshots/`, prints its path (also `latest.png`) |
+| `record [SECONDS] [name]` | MP4 screen recording (default 10 s, max 180) |
+| `ui [--xml]` | Elements with tap coordinates, testIDs and focused/checked/disabled flags (or raw XML) |
+| `texts` | Just the visible text |
+| `find "Text"` | Center `X Y` of an element |
 
-Run `npx eaenv help` for the full list.
+**Touch**
+
+| Command | What it does |
+|---------|--------------|
+| `tap X Y` · `double-tap X Y` · `long-press X Y [ms]` | Tap by pixels |
+| `tap-text "Sign in"` · `long-press-text "Item" [ms]` | Tap an element |
+| `swipe X1 Y1 X2 Y2 [ms]` · `drag X1 Y1 X2 Y2 [ms]` | Gestures |
+| `scroll down\|up\|left\|right` | Scrolls inside the scrollable view |
+| `scroll-to "Row 30" [--up] [--max N]` | Scroll until an element is visible |
+
+**Type and keys**
+
+| Command | What it does |
+|---------|--------------|
+| `fill "Email" "me@x.com"` | Tap a field, clear it, type, hide the keyboard |
+| `text "hello"` · `clear` · `hide-keyboard` | Typing in the focused field |
+| `key NAME` · `back` · `home` · `recents` · `enter` · `lock` · `unlock` | Keys (`key VOLUME_UP`, `key TAB`, …) |
+
+**Wait and assert** (exit 0 = pass, 1 = fail, so they work as test steps)
+
+| Command | What it does |
+|---------|--------------|
+| `wait-for "Welcome" [--timeout S]` | Wait until an element appears (default 15 s) |
+| `wait-gone "Loading" [--timeout S]` | Wait until it disappears |
+| `assert-text "Welcome"` · `assert-no-text "Error"` | Check what's on screen |
+
+**Device state** (all reversible)
+
+| Command | What it does |
+|---------|--------------|
+| `rotate portrait\|landscape\|auto` | Orientation (apps locked in `app.json` stay put) |
+| `dark-mode on\|off` · `font-scale 1.3\|reset` · `animations on\|off` | Display |
+| `network on\|off` · `airplane on\|off` | Offline testing. Metro keeps working over adb |
+| `location 37.42 -122.08` · `battery 15\|unplug\|charge\|reset` | Sensors |
+| `notifications open\|close\|settings` | Notification shade, quick settings |
+| `permission grant\|revoke\|list [PERM]` | Runtime permissions, e.g. `permission grant CAMERA` |
+| `locale ar\|fr-FR\|reset` | Per-app language (reopen the app to apply) |
+| `info` | Device summary |
+
+**App and debugging**
+
+| Command | What it does |
+|---------|--------------|
+| `app launch\|stop\|restart\|clear\|info [PKG]` | App control. `clear` = fresh-install state |
+| `app install FILE.apk` · `app uninstall PKG` · `app list` | Manage APKs |
+| `logcat [--errors\|--all] [-n N] [--follow]` | JS logs (`ReactNativeJS`) or errors |
+| `crash [-n N]` | Recent crashes |
+| `perf [--reset]` · `memory` | Jank %, frame-time percentiles, memory use |
+| `reload` · `devmenu` · `open-url URL` · `activity` · `size` · `adb …` | Misc |
+
+Prefix every command with `npx eaenv`, e.g. `npx eaenv scroll-to "Row 30"`.
+App commands target Expo Go unless you set `APP_PACKAGE`. Run
+`npx eaenv help` for the full list.
 
 ## Using it with Claude Code and other AI assistants
 

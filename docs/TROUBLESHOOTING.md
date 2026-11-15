@@ -25,7 +25,28 @@ Hypervisor.framework is built in. If you're inside a VM (e.g. a CI Mac VM),
 nested virtualization may be unavailable.
 
 **Screen is locked / taps do nothing.**
-`scripts/device.sh key WAKEUP` then `scripts/device.sh adb shell wm dismiss-keyguard`.
+Run `npx eaenv unlock`.
+
+**A "Try out your stylus" screen appears when typing.**
+The emulator's virtual touchscreen reports stylus support, so Gboard shows
+its handwriting tutorial. `emulator start` turns this off. If you started the
+emulator another way, run
+`npx eaenv adb shell settings put secure stylus_handwriting_enabled 0`.
+
+**"This is the developer menu" covers the app.**
+That's Expo Go's one-time introduction after it's installed or its data is
+cleared. `open` and `app clear` dismiss it automatically. You can also run
+`npx eaenv tap-text Continue` and then `npx eaenv tap-text Close`.
+
+**`rotate landscape` does nothing.**
+The app is locked to one orientation. The Expo template sets
+`"orientation": "portrait"` in `app.json`. Change it to `"default"` to allow
+rotation. The home screen launcher also never rotates.
+
+**`scroll` types random words into a text field.**
+That happened when the swipe crossed the on-screen keyboard (glide typing).
+`scroll`, `tap-text` and `fill` now hide the keyboard first. For raw
+`swipe`, run `npx eaenv hide-keyboard` before it.
 
 ## adb
 

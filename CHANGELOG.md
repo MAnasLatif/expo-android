@@ -17,6 +17,21 @@ the project uses [Semantic Versioning](https://semver.org/).
 - The Docker image rebuilds automatically when its sources change (for
   example after upgrading eaenv).
 - Release workflow: pushing a `vX.Y.Z` tag publishes to npm with provenance.
+- Many more device actions, all available as `npx eaenv <cmd>`:
+  - touch: `double-tap`, `long-press`, `long-press-text`, `drag`, `scroll
+    left|right`, `scroll-to`
+  - typing: `fill`, `clear`, `hide-keyboard`, `recents`, `enter`, `lock`,
+    `unlock`
+  - wait and assert: `wait-for`, `wait-gone`, `assert-text`,
+    `assert-no-text`, `texts`, `ui --xml`
+  - device state: `rotate`, `dark-mode`, `font-scale`, `animations`,
+    `network`, `airplane`, `location`, `battery`, `notifications`,
+    `permission`, `locale`, `record`, `info`
+  - app and debugging: `app launch|stop|restart|clear|install|uninstall|list|info`,
+    `crash`, `perf`, `memory`
+- Selectors match `testID`, `accessibilityLabel` and placeholders, and
+  prefer exact matches. `APP_PACKAGE` selects the target app (Expo Go by
+  default).
 - Optional [Kiri](https://runkiri.com) container runtime
   (`CONTAINER_RUNTIME=kiri` or `scripts/setup.sh --runtime kiri`). Docker
   Desktop stays the default. The global docker context is never changed.
@@ -32,6 +47,12 @@ the project uses [Semantic Versioning](https://semver.org/).
   of failing on small VMs.
 - `open` force-stops Expo Go first, so a quick-boot snapshot can't leave
   stale code on screen.
+- Gboard's stylus tutorial no longer hijacks typing. The emulator
+  advertises stylus input, so `emulator start` disables handwriting.
+- `scroll`/`tap-text`/`fill` hide the on-screen keyboard first, which stops
+  accidental glide typing. Scroll swipes start inside the scroll view.
+- Expo Go's first-run developer menu is dismissed after install or
+  `app clear`.
 
 ## [0.1.0] - 2026-11-15
 
