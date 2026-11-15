@@ -16,13 +16,13 @@
   ],
   "license": "MIT",
   "author": "M Anas Latif",
-  "homepage": "https://github.com/OWNER/expo-android#readme",
+  "homepage": "https://github.com/MAnasLatif/expo-android#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OWNER/expo-android.git"
+    "url": "git+https://github.com/MAnasLatif/expo-android.git"
   },
   "bugs": {
-    "url": "https://github.com/OWNER/expo-android/issues"
+    "url": "https://github.com/MAnasLatif/expo-android/issues"
   },
   "bin": {
     "eaenv": "bin/eaenv.js"

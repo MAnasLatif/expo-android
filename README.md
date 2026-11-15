@@ -1,7 +1,7 @@
 # expo-android · `eaenv`
 
 [![npm](https://img.shields.io/npm/v/eaenv.svg)](https://www.npmjs.com/package/eaenv)
-[![CI](https://github.com/OWNER/expo-android/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
+[![CI](https://github.com/MAnasLatif/expo-android/actions/workflows/ci.yml/badge.svg)](https://github.com/MAnasLatif/expo-android/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Run and test **Expo / React Native apps on a real Android emulator on your
@@ -233,7 +233,7 @@ resources and other Android SDKs are never touched.
 ## From source (contributors)
 
 ```bash
-git clone https://github.com/OWNER/expo-android.git && cd expo-android
+git clone https://github.com/MAnasLatif/expo-android.git && cd expo-android
 scripts/setup.sh --project ~/code/my-expo-app
 ```
 
