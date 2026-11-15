@@ -73,6 +73,10 @@ export ANDROID_SERIAL="$serial"
 # Unlock the screen so taps/screenshots hit the app, not the lock screen.
 adb_host shell input keyevent KEYCODE_WAKEUP >/dev/null 2>&1 || true
 adb_host shell wm dismiss-keyguard >/dev/null 2>&1 || true
+# The emulator's virtual touchscreens advertise stylus buttons, so Gboard pops
+# a full-screen "Try out your stylus" tutorial on first text input, stealing
+# focus from the app and breaking automated typing/taps. Turn it off.
+adb_host shell settings put secure stylus_handwriting_enabled 0 >/dev/null 2>&1 || true
 if [ "$NO_ANIM" = 1 ]; then
   for s in window_animation_scale transition_animation_scale animator_duration_scale; do
     adb_host shell settings put global "$s" 0
