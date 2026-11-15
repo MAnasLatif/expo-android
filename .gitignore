@@ -11,6 +11,8 @@ downloads/
 *.zip
 *.apk
 *.aab
+*.tgz
+node_modules/
 
 # --- Generated artifacts ---
 .android-screenshots/

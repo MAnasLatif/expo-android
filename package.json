@@ -1,0 +1,47 @@
+{
+  "name": "expoemu",
+  "version": "0.1.0",
+  "description": "Expo Emulator: run and test Expo apps on a native Android emulator on macOS with the toolchain in Docker. Agent-friendly CLI for screenshots, taps, UI inspection and logs.",
+  "keywords": [
+    "expo",
+    "react-native",
+    "android",
+    "emulator",
+    "adb",
+    "docker",
+    "kiri",
+    "testing",
+    "ai-agents",
+    "claude-code"
+  ],
+  "license": "MIT",
+  "author": "M Anas Latif",
+  "homepage": "https://github.com/OWNER/expoemu#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OWNER/expoemu.git"
+  },
+  "bugs": {
+    "url": "https://github.com/OWNER/expoemu/issues"
+  },
+  "bin": {
+    "expoemu": "bin/expoemu.js"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "docker/",
+    "config/",
+    "docs/AGENTS.md",
+    "Dockerfile",
+    "docker-compose.yml",
+    ".dockerignore",
+    ".env.example"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
