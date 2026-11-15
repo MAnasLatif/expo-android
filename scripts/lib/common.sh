@@ -54,7 +54,7 @@ cmd() {
     stop.sh) sub=stop ;;            shell.sh) sub=shell ;;
     expo.sh) sub=expo ;;            open-app.sh) sub=open ;;
     status.sh) sub=status ;;        screenshot.sh) sub=screenshot ;;
-    cleanup.sh) sub=cleanup ;;      device.sh) sub=help ;;
+    cleanup.sh) sub=cleanup ;;      device.sh|system.sh|app.sh) sub=help ;;
     emulator-start.sh) sub="emulator start" ;;
     emulator-stop.sh) sub="emulator stop" ;;
     *) sub="${script%.sh}" ;;
@@ -95,6 +95,8 @@ load_config() {
   : "${AVD_RAM_MB:=4096}" "${AVD_CORES:=4}" "${AVD_DATA_PARTITION:=8G}"
   : "${EMULATOR_GPU:=host}" "${EMULATOR_HEADLESS:=false}"
   : "${ADB_SERVER_PORT:=5037}" "${METRO_PORT:=8081}"
+  # Android package targeted by app/permission/locale commands (Expo Go).
+  : "${APP_PACKAGE:=host.exp.exponent}"
 
   # Isolated Android layout — everything lives under $ENV_HOME.
   SDK_DIR="$ENV_HOME/sdk"
