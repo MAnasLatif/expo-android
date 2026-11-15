@@ -84,6 +84,32 @@ load_config() {
   export ANDROID_ADB_SERVER_PORT="$ADB_SERVER_PORT"
 
   detect_arch
+  select_runtime
+}
+
+# --- Container runtime: Docker Desktop (default) or Kiri (opt-in) ------------
+# Kiri (https://runkiri.com) is a lightweight Docker-compatible runtime that
+# speaks the Docker Engine API. We point the docker CLI at Kiri's socket via
+# DOCKER_HOST for THIS process only — the user's global docker context,
+# ~/.docker/config.json and shell profiles are never changed.
+select_runtime() {
+  : "${CONTAINER_RUNTIME:=docker}"
+  case "$CONTAINER_RUNTIME" in
+    docker)
+      RUNTIME_NAME="Docker Desktop" ;;
+    kiri)
+      RUNTIME_NAME="Kiri"
+      : "${KIRI_SOCKET:=$HOME/.kiri/run/docker.sock}"
+      export DOCKER_HOST="unix://$KIRI_SOCKET"
+      unset DOCKER_CONTEXT   # DOCKER_HOST wins anyway; avoid confusing warnings
+      # Kiri links its bundled docker CLI into ~/.kiri/bin. Use it only when no
+      # docker CLI is on PATH (e.g. Docker Desktop not installed).
+      if ! command -v docker >/dev/null && [ -x "$HOME/.kiri/bin/docker" ]; then
+        PATH="$PATH:$HOME/.kiri/bin"
+      fi ;;
+    *)
+      die "CONTAINER_RUNTIME must be 'docker' or 'kiri' (got '$CONTAINER_RUNTIME')" ;;
+  esac
 }
 
 # --- Host architecture -> emulator/system-image flavour -----------------------
@@ -134,7 +160,23 @@ screenshot_dir() {
 
 # --- Docker ------------------------------------------------------------------
 require_docker() {
-  command -v docker >/dev/null || die "Docker is not installed. Install Docker Desktop: https://www.docker.com/products/docker-desktop/"
+  if [ "$CONTAINER_RUNTIME" = kiri ]; then
+    command -v docker >/dev/null \
+      || die "No docker CLI found. Install Kiri (https://runkiri.com) — it ships one in ~/.kiri/bin — or set CONTAINER_RUNTIME=docker."
+    if ! docker info >/dev/null 2>&1; then
+      [ -S "$KIRI_SOCKET" ] \
+        || die "Kiri is not running (no socket at $KIRI_SOCKET). Open Kiri.app, or install it from https://runkiri.com"
+      die "Kiri's engine at $KIRI_SOCKET is not responding. Try: kiri diag logs"
+    fi
+    # On Apple Silicon Kiri runs linux/amd64 images through Apple Rosetta only;
+    # without Rosetta, amd64 programs (like Google's Linux adb) cannot start.
+    if [ "$HOST_ARCH" = arm64 ] && [ "${DOCKER_PLATFORM:-linux/amd64}" = linux/amd64 ] \
+       && ! /usr/bin/arch -x86_64 /usr/bin/true 2>/dev/null; then
+      die "Kiri needs Apple Rosetta for linux/amd64 images. Install it with: softwareupdate --install-rosetta"
+    fi
+    return
+  fi
+  command -v docker >/dev/null || die "Docker is not installed. Install Docker Desktop: https://www.docker.com/products/docker-desktop/ (or use Kiri: CONTAINER_RUNTIME=kiri)"
   docker info >/dev/null 2>&1 || die "Docker is not running. Start Docker Desktop and retry."
 }
 

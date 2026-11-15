@@ -1,7 +1,10 @@
 # =============================================================================
 # expo-android-environment — Docker Compose
 #
-# Networking model (Docker Desktop for Mac):
+# Works with Docker Desktop (default) and Kiri (CONTAINER_RUNTIME=kiri in .env);
+# both provide host.docker.internal → the Mac's loopback.
+#
+# Networking model:
 #   container adb client ──tcp──> host.docker.internal:5037 ──> macOS adb server ──> emulator
 #   emulator ──adb reverse tcp:8081──> macOS 127.0.0.1:8081 ──published port──> Metro in container
 #
@@ -51,7 +54,7 @@ services:
       # Bound to 127.0.0.1 only — Metro is not exposed to your network.
       - "127.0.0.1:${METRO_PORT:-8081}:${METRO_PORT:-8081}"
     extra_hosts:
-      # Built in on Docker Desktop; makes the same name work on Linux hosts.
+      # Built in on Docker Desktop and Kiri; makes the same name work on Linux hosts.
       - "host.docker.internal:host-gateway"
     volumes:
       # Your project: mounted, never copied. Edits on macOS are live in Metro.
