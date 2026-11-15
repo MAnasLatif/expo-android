@@ -1,77 +1,76 @@
-# Using the Android environment from an AI coding agent
+# Using eaenv from an AI coding assistant
 
-This guide is for AI coding agents (Claude Code, Codex, Cursor, Aider, …) and
-the people who use them. Everything is a plain shell command run from the
-project terminal. The repo installs no plugin or MCP server and changes no
-agent configuration.
+This guide is for AI coding assistants (Claude Code, Codex, Cursor, Aider, …)
+and the people who use them. Everything is a plain `npx eaenv …` command run
+from the Expo project folder. eaenv installs no plugin or MCP server and
+changes no assistant configuration.
 
 > **Tip for users:** copy the "Snippet for your project" section below into your
-> Expo project's `CLAUDE.md` / `AGENTS.md`, replacing `$EXPO_ANDROID` with the absolute
-> path to your clone of this repository.
+> Expo project's `CLAUDE.md` / `AGENTS.md`. Adding eaenv as a devDependency
+> (`npm i -D eaenv`) pins the version, and `npx` won't ask to install.
 
 ## Prerequisites (done once by a human)
 
 ```bash
-scripts/setup.sh --project /path/to/expo-app   # SDK, AVD, Docker image
+cd /path/to/expo-app
+npx eaenv setup        # isolated Android SDK, Pixel AVD, Docker image
 ```
 
 ## Snippet for your project
 
 ````markdown
-## Android testing (expo-android)
+## Android testing (eaenv)
 
-The Android tools live in `$EXPO_ANDROID` (e.g. `~/tools/expo-android`).
-Run these from this project's root:
+Run these from this project's root. All output paths are absolute.
 
 | Goal | Command |
 |------|---------|
-| Check what is running | `$EXPO_ANDROID/scripts/status.sh` |
-| Boot the phone | `$EXPO_ANDROID/scripts/emulator-start.sh --no-animations` |
-| Start the container | `$EXPO_ANDROID/scripts/start.sh "$PWD"` |
-| Start Metro (non-blocking) | `$EXPO_ANDROID/scripts/expo.sh --background` |
-| Open app in Expo Go | `$EXPO_ANDROID/scripts/open-app.sh` |
-| Screenshot (prints path) | `$EXPO_ANDROID/scripts/screenshot.sh <name>` |
-| List on-screen elements | `$EXPO_ANDROID/scripts/device.sh ui` |
-| Tap by visible text | `$EXPO_ANDROID/scripts/device.sh tap-text "Login"` |
-| Tap / swipe / scroll | `$EXPO_ANDROID/scripts/device.sh tap X Y` · `swipe X1 Y1 X2 Y2` · `scroll down` |
-| Type text | `$EXPO_ANDROID/scripts/device.sh text "hello"` |
-| Back / Home | `$EXPO_ANDROID/scripts/device.sh back` · `home` |
-| JS logs / errors | `$EXPO_ANDROID/scripts/device.sh logcat` · `logcat --errors` |
-| Metro logs | `$EXPO_ANDROID/scripts/expo.sh --logs` |
-| Reload JS | `$EXPO_ANDROID/scripts/device.sh reload` |
-| Run a command in the container | `$EXPO_ANDROID/scripts/shell.sh bun add <pkg>` |
+| Check what is running | `npx eaenv status` (exit 0 = all good) |
+| Start everything | `npx eaenv up --no-animations` |
+| Stop everything | `npx eaenv down` |
+| Screenshot (prints path) | `npx eaenv screenshot <name>` |
+| List on-screen elements | `npx eaenv ui` |
+| Tap by visible text | `npx eaenv tap-text "Login"` |
+| Tap / swipe / scroll | `npx eaenv tap X Y` · `npx eaenv swipe X1 Y1 X2 Y2` · `npx eaenv scroll down` |
+| Type text / keys | `npx eaenv text "hello"` · `npx eaenv key ENTER` · `npx eaenv back` |
+| JS logs / errors | `npx eaenv logcat -n 100` · `npx eaenv logcat --errors -n 50` |
+| Metro logs | `npx eaenv expo --logs` |
+| Reload JS / reopen app | `npx eaenv reload` · `npx eaenv open` |
+| Add a package | `npx eaenv shell bun add <pkg>` |
 
-Screenshots are saved to `./.android-screenshots/` (latest one is always
-`./.android-screenshots/latest.png`). Read the PNG to inspect the UI.
-Install packages through `$EXPO_ANDROID/scripts/shell.sh bun add …` so Linux
-`node_modules` stay in sync inside the container.
+Screenshots are saved to `./.android-screenshots/`, and the latest one is
+always `./.android-screenshots/latest.png`. Read the PNG to inspect the UI.
+Install packages through `npx eaenv shell …` so the container's Linux
+`node_modules` stays in sync.
 ````
 
 ## Recommended verification loop
 
-1. `scripts/status.sh`. If it exits non-zero, follow the hints it prints.
-2. Make the code change. Fast Refresh applies it automatically.
-3. `scripts/device.sh logcat --errors -n 50` and `scripts/expo.sh --logs`.
-   Check for red-box errors or bundling failures.
-4. `scripts/screenshot.sh after-change`, then read the printed PNG path.
-5. To navigate, run `scripts/device.sh ui`. It prints the tap point for every
-   element:
+1. `npx eaenv status`. If it exits non-zero, run `npx eaenv up` or follow
+   the hints it prints.
+2. Make the code change. Fast Refresh applies it within seconds.
+3. `npx eaenv logcat --errors -n 50` and `npx eaenv expo --logs`. Check for
+   red-box errors or bundling failures.
+4. `npx eaenv screenshot after-change`, then read the printed PNG path.
+5. To navigate, run `npx eaenv ui`. It prints the tap point for every element:
 
    ```text
    # centerX centerY | text | content-desc | resource-id | class | clickable
    540 1210 | Sign in |  |  | android.widget.TextView | clickable
    ```
 
-   Then use `scripts/device.sh tap 540 1210` or `scripts/device.sh tap-text "Sign in"`.
+   Then use `npx eaenv tap 540 1210` or `npx eaenv tap-text "Sign in"`.
 6. Repeat screenshot → inspect → interact until the flow is verified.
 
 ## Notes
 
 - Coordinates are **device pixels** (default 1080 × 2400). Screenshots are
   the same size, so pixel positions in a screenshot can be tapped directly.
-- `--no-animations` on `emulator-start.sh` makes screenshots deterministic.
-- If the app shows a red error screen, `scripts/device.sh logcat` has the
-  JavaScript stack under the `ReactNativeJS` tag.
-- `scripts/device.sh adb …` runs any raw adb command against the emulator
-  through the isolated adb, with the right server port. Use it instead of a
-  global `adb`, which may not exist.
+- `--no-animations` on `up` makes screenshots deterministic.
+- If the app shows a red error screen, `npx eaenv logcat` has the JavaScript
+  stack under the `ReactNativeJS` tag.
+- If the screen shows old code, run `npx eaenv open`. It restarts Expo Go and
+  loads a fresh bundle.
+- `npx eaenv adb …` runs any raw adb command against the emulator with the
+  isolated adb and the right server port. Use it instead of a global `adb`,
+  which may not exist.

@@ -56,6 +56,29 @@ scripts/stop.sh --all
 Mention which host you tested on (Intel or Apple Silicon, macOS version,
 Docker Desktop version) in the PR.
 
+## Testing the npm package locally
+
+The CLI (`bin/eaenv.js`) only routes commands to `scripts/`. To test the real
+package before a release:
+
+```bash
+npm test                                   # CLI unit tests
+npm pack                                   # → eaenv-X.Y.Z.tgz
+cd /path/to/expo-app
+npx --package=/path/to/eaenv-X.Y.Z.tgz eaenv up
+```
+
+## Releasing to npm
+
+Maintainers only. This needs the `NPM_TOKEN` repository secret.
+
+```bash
+npm version patch        # or minor/major: bumps package.json, commits, tags vX.Y.Z
+git push --follow-tags   # the Release workflow tests and publishes with provenance
+```
+
+Move the **Unreleased** notes in `CHANGELOG.md` under the new version first.
+
 ## Linting
 
 CI runs [ShellCheck](https://www.shellcheck.net/) and a Docker build. To run

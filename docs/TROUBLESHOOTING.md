@@ -1,7 +1,11 @@
 # Troubleshooting
 
-Start with `scripts/status.sh`. It checks every link in the chain and prints
-a hint for each failure.
+Start with `npx eaenv status` (or `scripts/status.sh` in a git clone). It
+checks every link in the chain and prints a hint for each failure.
+
+> Script names below map to `npx eaenv` commands: `scripts/emulator-start.sh`
+> → `npx eaenv emulator start`, `scripts/open-app.sh` → `npx eaenv open`,
+> `scripts/device.sh logcat` → `npx eaenv logcat`, and so on.
 
 ## Emulator
 

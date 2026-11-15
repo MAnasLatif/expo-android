@@ -8,14 +8,30 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- npm package **`eaenv`**: `npx eaenv setup | up | down | status | screenshot |
+  ui | tap-text | logcat …` from the Expo project folder, for people and AI
+  assistants. `up` starts the phone, container and Metro, and opens the app
+  in one command.
+- Settings for npm installs live in `~/.expo-android-env/config.env`
+  (`EAENV_CONFIG` overrides). Git clones keep using `.env`.
+- The Docker image rebuilds automatically when its sources change (for
+  example after upgrading eaenv).
+- Release workflow: pushing a `vX.Y.Z` tag publishes to npm with provenance.
 - Optional [Kiri](https://runkiri.com) container runtime
   (`CONTAINER_RUNTIME=kiri` or `scripts/setup.sh --runtime kiri`). Docker
   Desktop stays the default. The global docker context is never changed.
+
+### Changed
+
+- Commands now target the Expo project in the current folder before the
+  saved `PROJECT_DIR`.
 
 ### Fixed
 
 - `scripts/start.sh` caps `CONTAINER_CPUS` to the engine's CPU count instead
   of failing on small VMs.
+- `open` force-stops Expo Go first, so a quick-boot snapshot can't leave
+  stale code on screen.
 
 ## [0.1.0] - 2026-11-15
 
