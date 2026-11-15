@@ -1,7 +1,11 @@
 # Troubleshooting
 
-Start with `scripts/status.sh`. It checks every link in the chain and prints
-a hint for each failure.
+Start with `npx expoemu status` (or `scripts/status.sh` in a git clone). It
+checks every link in the chain and prints a hint for each failure.
+
+> Script names below map to `npx expoemu` commands: `scripts/emulator-start.sh`
+> → `npx expoemu emulator start`, `scripts/open-app.sh` → `npx expoemu open`,
+> `scripts/device.sh logcat` → `npx expoemu logcat`, and so on.
 
 ## Emulator
 
