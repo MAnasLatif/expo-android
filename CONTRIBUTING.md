@@ -72,12 +72,30 @@ npx --package=/path/to/eaenv-X.Y.Z.tgz eaenv up
 
 Maintainers only. This needs the `NPM_TOKEN` repository secret.
 
+Push a version tag on any commit. The **tag decides the version**, so
+`package.json` doesn't need editing:
+
 ```bash
-npm version patch        # or minor/major: bumps package.json, commits, tags vX.Y.Z
-git push --follow-tags   # the Release workflow tests and publishes with provenance
+git tag v0.1.0 && git push origin v0.1.0               # → eaenv@0.1.0 on npm "latest"
+git tag v0.2.0-beta.1 && git push origin v0.2.0-beta.1 # → eaenv@0.2.0-beta.1 on npm "beta"
 ```
 
-Move the **Unreleased** notes in `CHANGELOG.md` under the new version first.
+| Tag | npm version | npm dist-tag | Users get it with |
+|-----|-------------|--------------|-------------------|
+| `v1.2.3` | `1.2.3` | `latest` | `npx eaenv …` |
+| `v1.3.0-beta.1` | `1.3.0-beta.1` | `beta` | `npx eaenv@beta …` |
+| `v1.3.0-rc.1` / `-alpha.1` / `-next.1` | same | `rc` / `alpha` / `next` | `npx eaenv@rc …` |
+
+The [Release workflow](.github/workflows/release.yml) validates the tag,
+refuses versions already on npm, and runs the tests, ShellCheck and the
+version sync check. It then publishes with
+[provenance](https://docs.npmjs.com/generating-provenance-statements) and
+creates a GitHub Release with generated notes and the tarball. A failed
+release publishes nothing. Delete the tag (`git push --delete origin vX.Y.Z`),
+fix the problem, and tag again.
+
+Before tagging, move the **Unreleased** notes in `CHANGELOG.md` under the new
+version and commit.
 
 ## Linting
 
