@@ -48,10 +48,13 @@ if [ "$INSTALL" = 1 ]; then
   fi
 fi
 
-cat >&2 <<EOF
+# Next-step hints, unless start.sh runs as one step of `eaenv up`.
+if [ -z "${EAENV_QUIET_HINTS:-}" ]; then
+  cat >&2 <<EOF
 
 Next:
-  scripts/emulator-start.sh   # if the phone isn't running yet
-  scripts/expo.sh             # start Metro (interactive)  — or: scripts/expo.sh --background
-  scripts/open-app.sh         # install Expo Go if needed and open the app
+  $(cmd emulator-start.sh)   # if the phone isn't running yet
+  $(cmd expo.sh) --background   # start Metro (or without --background for the interactive UI)
+  $(cmd open-app.sh)   # install Expo Go if needed and open the app
 EOF
+fi

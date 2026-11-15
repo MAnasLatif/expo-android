@@ -208,9 +208,21 @@ fi
 
 cat >&2 <<EOF
 
-${C_GREEN}Setup complete.${C_RESET} Next:
+${C_GREEN}Setup complete.${C_RESET} Next, from your Expo project folder:
+EOF
+# Hints follow how setup was run (npx eaenv … vs scripts/….sh).
+if [ -n "${EAENV_CLI:-}" ]; then
+  cat >&2 <<'EOF'
+  npx eaenv up        # boot the phone, start the container + Metro, open the app
+  npx eaenv status    # verify everything is connected
+  npx eaenv down      # stop everything when you're done
+EOF
+else
+  cat >&2 <<'EOF'
   scripts/emulator-start.sh                 # boot the virtual phone
   scripts/start.sh /path/to/your-expo-app   # start the container
-  scripts/expo.sh                           # run Metro + open in Expo Go
+  scripts/expo.sh --background              # run Metro
+  scripts/open-app.sh                       # open the app in Expo Go
   scripts/status.sh                         # verify everything is connected
 EOF
+fi

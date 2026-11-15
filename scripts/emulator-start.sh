@@ -32,7 +32,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-[ -f "$AVD_HOME/$AVD_NAME.avd/config.ini" ] || die "AVD '$AVD_NAME' not found. Run: scripts/setup.sh"
+[ -f "$AVD_HOME/$AVD_NAME.avd/config.ini" ] || die "AVD '$AVD_NAME' not found. Run: $(cmd setup.sh)"
 [ "$HEADLESS" = true ] && EXTRA+=(-no-window)
 
 # --- 1. adb server (localhost only; Docker reaches it via host.docker.internal)

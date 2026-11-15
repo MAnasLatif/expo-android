@@ -116,5 +116,5 @@ case "$cmd" in
   activity) sh dumpsys activity activities | tr -d '\r' | grep -m1 -E 'topResumedActivity|mResumedActivity' | sed 's/^ *//' ;;
   size)     screen_size ;;
   adb)      adb_host "$@" ;;
-  *) die "Unknown command: $cmd (try: scripts/device.sh help)" ;;
+  *) die "Unknown command: $cmd (try: $(cmd device.sh)$([ -n "${EAENV_CLI:-}" ] || echo ' help'))" ;;
 esac

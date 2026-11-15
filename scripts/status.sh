@@ -19,9 +19,9 @@ echo "expo-android status" >&2
 if [ -x "$ADB" ] && [ -x "$EMULATOR_BIN" ]; then
   pass "Isolated SDK: $SDK_DIR (adb $(cat "$SDK_DIR/platform-tools/.installed" 2>/dev/null), emulator $(cat "$SDK_DIR/emulator/.installed" 2>/dev/null))"
 else
-  fail "Isolated SDK missing — run scripts/setup.sh"
+  fail "Isolated SDK missing — run $(cmd setup.sh)"
 fi
-[ -f "$AVD_HOME/$AVD_NAME.avd/config.ini" ] && pass "AVD: $AVD_NAME" || fail "AVD '$AVD_NAME' missing — run scripts/setup.sh"
+[ -f "$AVD_HOME/$AVD_NAME.avd/config.ini" ] && pass "AVD: $AVD_NAME" || fail "AVD '$AVD_NAME' missing — run $(cmd setup.sh)"
 
 # --- Emulator + adb server -------------------------------------------------------
 serial=""
@@ -30,7 +30,7 @@ if [ -x "$ADB" ]; then
     pass "adb server listening on 127.0.0.1:$ADB_SERVER_PORT"
     serial="$(emulator_serial)"
   else
-    fail "adb server not running — scripts/emulator-start.sh starts it"
+    fail "adb server not running — $(cmd emulator-start.sh) starts it"
   fi
 fi
 if [ -n "$serial" ]; then
@@ -40,15 +40,15 @@ if [ -n "$serial" ]; then
   if adb_host -s "$serial" reverse --list 2>/dev/null | grep -q "tcp:$METRO_PORT"; then
     pass "adb reverse tcp:$METRO_PORT active"
   else
-    note "adb reverse for Metro not set (scripts/expo.sh or scripts/open-app.sh set it)"
+    note "adb reverse for Metro not set ($(cmd expo.sh) or $(cmd open-app.sh) set it)"
   fi
   if adb_host -s "$serial" shell pm list packages host.exp.exponent 2>/dev/null | grep -q exponent; then
     pass "Expo Go installed"
   else
-    note "Expo Go not installed yet (scripts/open-app.sh installs it)"
+    note "Expo Go not installed yet ($(cmd open-app.sh) installs it)"
   fi
 else
-  [ -x "$ADB" ] && fail "No emulator running — scripts/emulator-start.sh"
+  [ -x "$ADB" ] && fail "No emulator running — $(cmd emulator-start.sh)"
 fi
 
 # --- Container runtime (Docker Desktop or Kiri) -----------------------------------
@@ -57,7 +57,7 @@ if ! command -v docker >/dev/null || ! docker info >/dev/null 2>&1; then
 else
   pass "Container runtime: $RUNTIME_NAME ($(docker info -f '{{.NCPU}} CPUs, server {{.ServerVersion}}' 2>/dev/null))"
   if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
-    fail "Image missing — scripts/setup.sh"
+    fail "Image missing — $(cmd setup.sh)"
   elif image_outdated; then
     note "Image $IMAGE_NAME is from older sources — next start rebuilds it"
   else
@@ -74,7 +74,7 @@ else
       fail "Container cannot see the emulator via adb (is the emulator running?)"
     fi
   else
-    fail "Container not running — scripts/start.sh /path/to/expo-app"
+    fail "Container not running — $(cmd start.sh) /path/to/expo-app"
   fi
 fi
 
@@ -82,7 +82,7 @@ fi
 if curl -fs --max-time 2 "http://127.0.0.1:$METRO_PORT/status" 2>/dev/null | grep -q running; then
   pass "Metro running on 127.0.0.1:$METRO_PORT"
 else
-  note "Metro not running (scripts/expo.sh)"
+  note "Metro not running ($(cmd expo.sh))"
 fi
 
 exit "$FAIL"

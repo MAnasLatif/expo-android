@@ -8,7 +8,7 @@
 source "$(dirname "$0")/lib/common.sh"
 load_config
 require_docker
-container_running || die "Container not running. Start it with: scripts/start.sh /path/to/expo-app"
+container_running || die "Container not running. Start it with: $(cmd start.sh) /path/to/expo-app"
 
 # Allocate a TTY only when we have one (agents/CI run without a terminal).
 flags=(-i)

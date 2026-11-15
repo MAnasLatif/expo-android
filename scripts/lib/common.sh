@@ -44,6 +44,24 @@ ok()   { printf '%s ✓%s %s\n' "$C_GREEN" "$C_RESET" "$*" >&2; }
 warn() { printf '%s !%s %s\n' "$C_YELLOW" "$C_RESET" "$*" >&2; }
 die()  { printf '%s ✗%s %s\n' "$C_RED" "$C_RESET" "$*" >&2; exit 1; }
 
+# --- Command hints -------------------------------------------------------------
+# Show commands the way the user runs them: `npx eaenv open` when called through
+# the eaenv CLI (bin/eaenv.js sets EAENV_CLI=1), `scripts/open-app.sh` otherwise.
+cmd() {
+  local script="$1" sub
+  case "$script" in
+    setup.sh) sub=setup ;;          start.sh) sub=start ;;
+    stop.sh) sub=stop ;;            shell.sh) sub=shell ;;
+    expo.sh) sub=expo ;;            open-app.sh) sub=open ;;
+    status.sh) sub=status ;;        screenshot.sh) sub=screenshot ;;
+    cleanup.sh) sub=cleanup ;;      device.sh) sub=help ;;
+    emulator-start.sh) sub="emulator start" ;;
+    emulator-stop.sh) sub="emulator stop" ;;
+    *) sub="${script%.sh}" ;;
+  esac
+  if [ -n "${EAENV_CLI:-}" ]; then printf 'npx eaenv %s' "$sub"; else printf 'scripts/%s' "$script"; fi
+}
+
 # --- Config loading ----------------------------------------------------------
 # Values already exported in the shell win over files (handy for CI/overrides).
 load_config() {
@@ -236,7 +254,7 @@ container_running() {
 
 # --- adb (host side) ---------------------------------------------------------
 require_sdk() {
-  [ -x "$ADB" ] || die "Isolated SDK not installed. Run: scripts/setup.sh"
+  [ -x "$ADB" ] || die "Isolated SDK not installed. Run: $(cmd setup.sh)"
 }
 
 adb_host() { "$ADB" -P "$ADB_SERVER_PORT" "$@"; }
@@ -251,6 +269,6 @@ require_device() {
   require_sdk
   local serial
   serial="$(emulator_serial)"
-  [ -n "$serial" ] || die "No running emulator. Start one with: scripts/emulator-start.sh"
+  [ -n "$serial" ] || die "No running emulator. Start one with: $(cmd emulator-start.sh)"
   export ANDROID_SERIAL="$serial"
 }
