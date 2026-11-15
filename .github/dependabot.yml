@@ -1,0 +1,16 @@
+# Dependabot covers GitHub Actions and the Ubuntu base image.
+# Android SDK / Node / Bun versions live in config/versions.env and are
+# tracked by .github/workflows/check-versions.yml instead.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies]

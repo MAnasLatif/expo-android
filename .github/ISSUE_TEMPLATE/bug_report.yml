@@ -1,0 +1,38 @@
+name: Bug report
+description: Something doesn't work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you run, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: status
+    attributes:
+      label: Output of scripts/status.sh
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: cpu
+    attributes:
+      label: Mac CPU
+      options: [Intel (x86_64), Apple Silicon (arm64)]
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: macOS and Docker Desktop versions
+      placeholder: macOS 15.7, Docker Desktop 4.x
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: e.g. ~/.expo-android-env/logs/emulator.log, scripts/expo.sh --logs, scripts/device.sh logcat --errors
+      render: text
