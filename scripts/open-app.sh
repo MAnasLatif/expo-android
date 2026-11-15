@@ -48,5 +48,9 @@ fi
 adb_host reverse "tcp:$METRO_PORT" "tcp:$METRO_PORT" >/dev/null
 curl -fs --max-time 2 "http://127.0.0.1:$METRO_PORT/status" | grep -q running \
   || warn "Metro is not responding on 127.0.0.1:$METRO_PORT — start it with scripts/expo.sh"
+# Force-stop first: after a quick-boot snapshot Expo Go may still show an old
+# experience, and a deep link to it only brings it to the front without
+# fetching a fresh bundle from the current Metro.
+adb_host shell am force-stop "$EXPO_GO_PKG"
 adb_host shell am start -a android.intent.action.VIEW -d "$URL" "$EXPO_GO_PKG" >/dev/null
 ok "Opened $URL in Expo Go on $ANDROID_SERIAL"
