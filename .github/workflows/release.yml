@@ -9,7 +9,11 @@
 #
 #   Users install a pre-release with:  npx expoemu@beta …   /  npm i -D expoemu@beta
 #
-# Required repository secret: NPM_TOKEN (npm access token with publish rights).
+# Authentication: npm Trusted Publishing (OIDC) — NO npm token or secret.
+# GitHub issues a short-lived identity token to this workflow and npm accepts it
+# because the package's trusted publisher is configured as:
+#   MAnasLatif / expoemu / release.yml
+# Provenance is attached automatically. See CONTRIBUTING.md → Releasing.
 # =============================================================================
 name: Release
 
@@ -19,7 +23,7 @@ on:
 
 permissions:
   contents: write   # create the GitHub Release
-  id-token: write   # npm provenance: links the package to this workflow run
+  id-token: write   # OIDC identity for npm trusted publishing (+ provenance)
 
 # Never publish the same tag twice in parallel.
 concurrency:
@@ -33,20 +37,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Trusted publishing needs Node >= 22.14 and npm CLI >= 11.5.1.
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
 
       # --- 1. Preconditions ---------------------------------------------------
-      - name: Check NPM_TOKEN secret
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Ensure npm supports trusted publishing (>= 11.5.1)
         run: |
-          if [ -z "$NPM_TOKEN" ]; then
-            echo "::error::Repository secret NPM_TOKEN is not set (Settings → Secrets and variables → Actions)."
-            exit 1
+          if ! node -e 'const [a,b,c]=process.argv[1].split(".").map(Number);process.exit(a>11||(a===11&&(b>5||(b===5&&c>=1)))?0:1)' "$(npm --version)"; then
+            npm install -g npm@latest
           fi
+          echo "npm $(npm --version)"
 
       # --- 2. Derive the package variant from the tag ------------------------------
       - name: Version and npm dist-tag from git tag
@@ -73,11 +76,17 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "Publishing expoemu@$version to npm dist-tag '$channel' (prerelease: $prerelease)"
 
-      - name: Refuse to republish an existing version
+      # npm versions are immutable. If this version is already on npm (e.g. the
+      # very first release, published by hand before trusted publishing could be
+      # configured, or a re-run), skip the npm step but still create the release.
+      - name: Is this version already on npm?
+        id: exists
         run: |
           if npm view "expoemu@${{ steps.v.outputs.version }}" version >/dev/null 2>&1; then
-            echo "::error::expoemu@${{ steps.v.outputs.version }} is already on npm. Versions are immutable — use a new tag."
-            exit 1
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "::warning::expoemu@${{ steps.v.outputs.version }} is already on npm — skipping publish, creating the GitHub Release only."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Set package.json version (build only, not committed)
@@ -102,15 +111,20 @@ jobs:
           echo "file=$file" >> "$GITHUB_OUTPUT"
 
       # --- 4. Publish --------------------------------------------------------------------
-      - name: Publish to npm
-        run: npm publish "${{ steps.pack.outputs.file }}" --provenance --access public --tag "${{ steps.v.outputs.channel }}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # No token: npm authenticates this run via OIDC (trusted publisher) and
+      # attaches provenance automatically.
+      - name: Publish to npm (trusted publishing)
+        if: steps.exists.outputs.published == 'false'
+        run: npm publish "${{ steps.pack.outputs.file }}" --access public --tag "${{ steps.v.outputs.channel }}"
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "GitHub Release $GITHUB_REF_NAME already exists — nothing to do."
+            exit 0
+          fi
           args=(--verify-tag --generate-notes --title "expoemu ${{ steps.v.outputs.version }}")
           [ "${{ steps.v.outputs.prerelease }}" = true ] && args+=(--prerelease)
           gh release create "$GITHUB_REF_NAME" "${{ steps.pack.outputs.file }}" "${args[@]}"
@@ -118,7 +132,11 @@ jobs:
       - name: Summary
         run: |
           {
-            echo "### Published expoemu@${{ steps.v.outputs.version }}"
+            if [ "${{ steps.exists.outputs.published }}" = true ]; then
+              echo "### expoemu@${{ steps.v.outputs.version }} was already on npm — GitHub Release only"
+            else
+              echo "### Published expoemu@${{ steps.v.outputs.version }} (trusted publishing, with provenance)"
+            fi
             echo ""
             echo "- npm dist-tag: \`${{ steps.v.outputs.channel }}\`"
             echo "- Install: \`npm i -D expoemu@${{ steps.v.outputs.version }}\`"

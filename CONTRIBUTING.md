@@ -70,7 +70,31 @@ npx --package=/path/to/expoemu-X.Y.Z.tgz expoemu up
 
 ## Releasing to npm
 
-Maintainers only. This needs the `NPM_TOKEN` repository secret.
+Maintainers only. Publishing uses **npm Trusted Publishing (OIDC)**: no npm
+token or repository secret. npm trusts the
+[Release workflow](.github/workflows/release.yml) because the `expoemu`
+package has this trusted publisher configured:
+
+| Field | Value |
+|-------|-------|
+| Publisher | GitHub Actions |
+| Organization or user | `MAnasLatif` |
+| Repository | `expoemu` |
+| Workflow filename | `release.yml` |
+| Environment | *(empty)* |
+
+The trusted publisher was set up once, from a maintainer's machine with
+npm 11.15+ and 2FA:
+
+```bash
+npm trust github expoemu --file release.yml --repository MAnasLatif/expoemu --allow-publish
+```
+
+The same is available on npmjs.com → expoemu → Settings → Trusted publishing.
+npm only allows this for a package that already exists, so version `0.1.0`
+was published once by hand (`npm publish --access public`). Then, under
+**Settings → Publishing access**, choose *Require two-factor authentication
+and disallow tokens*. Trusted publishing keeps working.
 
 Push a version tag on any commit. The **tag decides the version**, so
 `package.json` doesn't need editing:
@@ -86,12 +110,14 @@ git tag v0.2.0-beta.1 && git push origin v0.2.0-beta.1 # → expoemu@0.2.0-beta.
 | `v1.3.0-beta.1` | `1.3.0-beta.1` | `beta` | `npx expoemu@beta …` |
 | `v1.3.0-rc.1` / `-alpha.1` / `-next.1` | same | `rc` / `alpha` / `next` | `npx expoemu@rc …` |
 
-The [Release workflow](.github/workflows/release.yml) validates the tag,
-refuses versions already on npm, and runs the tests, ShellCheck and the
-version sync check. It then publishes with
-[provenance](https://docs.npmjs.com/generating-provenance-statements) and
-creates a GitHub Release with generated notes and the tarball. A failed
-release publishes nothing. Delete the tag (`git push --delete origin vX.Y.Z`),
+The [Release workflow](.github/workflows/release.yml) validates the tag and
+runs the tests, ShellCheck and the version sync check. It then publishes
+through trusted publishing, which adds
+[provenance](https://docs.npmjs.com/generating-provenance-statements)
+automatically, and creates a GitHub Release with generated notes and the
+tarball. If the version is already on npm, for example `0.1.0` published by
+hand or a re-run, it skips the npm step and only creates the missing GitHub
+Release. A failed release publishes nothing. Delete the tag (`git push --delete origin vX.Y.Z`),
 fix the problem, and tag again.
 
 Before tagging, move the **Unreleased** notes in `CHANGELOG.md` under the new
