@@ -3,7 +3,11 @@
 # Open the running Expo project in Expo Go on the emulator.
 # Installs the Expo Go build matching the project's SDK if it is missing.
 #
-#   scripts/open-app.sh [--reinstall] [--url exp://...]
+#   scripts/open-app.sh [--reinstall] [--url exp://...] [--first-run]
+#
+# --first-run: Expo Go was just installed or its data cleared, so it will show
+# its one-time developer-menu introduction over the app; wait for it and
+# dismiss it (done automatically after installing Expo Go here).
 #
 # The APK is downloaded inside the container (cached in the expo-home volume)
 # and installed through the shared adb server — nothing is stored on macOS.
@@ -14,12 +18,13 @@ require_docker
 require_device
 container_running || die "Container not running. Start it with: $(cmd start.sh) /path/to/expo-app"
 
-REINSTALL=0 URL="exp://127.0.0.1:$METRO_PORT"
+REINSTALL=0 FIRST_RUN=0 URL="exp://127.0.0.1:$METRO_PORT"
 while [ $# -gt 0 ]; do
   case "$1" in
     --reinstall) REINSTALL=1; shift ;;
+    --first-run) FIRST_RUN=1; shift ;;
     --url) URL="$2"; shift 2 ;;
-    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,/^# =====*$/p' "$0"; exit 0 ;;
     *) die "Unknown option: $1" ;;
   esac
 done
@@ -42,6 +47,7 @@ if [ "$REINSTALL" = 1 ] || ! adb_host shell pm list packages "$EXPO_GO_PKG" | gr
     adb install -r -g "$apk"
   '
   ok "Expo Go installed"
+  FIRST_RUN=1
 fi
 
 # --- 2. Tunnel + deep link ------------------------------------------------------
@@ -54,3 +60,19 @@ curl -fs --max-time 2 "http://127.0.0.1:$METRO_PORT/status" | grep -q running \
 adb_host shell am force-stop "$EXPO_GO_PKG"
 adb_host shell am start -a android.intent.action.VIEW -d "$URL" "$EXPO_GO_PKG" >/dev/null
 ok "Opened $URL in Expo Go on $ANDROID_SERIAL"
+
+# --- 3. Fresh Expo Go: dismiss its one-time developer-menu introduction -------
+# It covers the app until "Continue" is tapped (which opens the full dev menu,
+# closed with "Close"). Only done when we know it will appear.
+if [ "$FIRST_RUN" = 1 ]; then
+  device="$(dirname "$0")/device.sh"
+  info "Waiting for Expo Go's first-run developer menu (bundle may still be building)"
+  if bash "$device" wait-for "This is the developer menu" --timeout 90 >/dev/null 2>&1; then
+    bash "$device" tap-text "Continue" >/dev/null 2>&1 || true
+    sleep 1
+    bash "$device" tap-text "Close" >/dev/null 2>&1 || true
+    ok "Dismissed Expo Go's first-run developer menu"
+  else
+    warn "Expo Go's first-run menu did not appear; nothing to dismiss"
+  fi
+fi
