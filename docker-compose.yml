@@ -34,6 +34,8 @@ services:
         ANDROID_EXTRA_PACKAGES: ${ANDROID_EXTRA_PACKAGES:-}
       labels:
         com.expo-android-env.managed: "true"
+        # Set by scripts/lib/common.sh; a mismatch makes start.sh rebuild.
+        com.expo-android-env.build-hash: "${BUILD_HASH:-unknown}"
     labels:
       com.expo-android-env.managed: "true"
     stdin_open: true
