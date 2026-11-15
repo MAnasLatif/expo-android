@@ -42,8 +42,9 @@ for tool in curl unzip shasum; do command -v "$tool" >/dev/null || die "Missing 
 
 # --- 1. Local .env -----------------------------------------------------------
 if [ ! -f "$ENV_FILE" ]; then
+  mkdir -p "$(dirname "$ENV_FILE")"
   cp "$REPO_ROOT/.env.example" "$ENV_FILE"
-  ok "Created .env from .env.example"
+  ok "Created settings file $ENV_FILE"
 fi
 if [ -n "$ARG_PROJECT" ]; then
   abs="$(cd "$ARG_PROJECT" && pwd -P)" || die "Not a directory: $ARG_PROJECT"

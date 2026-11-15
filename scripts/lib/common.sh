@@ -17,7 +17,18 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 COMPOSE_FILE="$REPO_ROOT/docker-compose.yml"
 VERSIONS_FILE="$REPO_ROOT/config/versions.env"
-ENV_FILE="$REPO_ROOT/.env"
+# Local settings file:
+#  - git clone   -> <repo>/.env (as before)
+#  - npm / npx   -> ~/.expo-android-env/config.env, because the package lives
+#                   in a cache folder that changes with every version.
+#  - EAENV_CONFIG overrides both.
+if [ -n "${EAENV_CONFIG:-}" ]; then
+  ENV_FILE="$EAENV_CONFIG"
+elif [ -d "$REPO_ROOT/.git" ] || [ -f "$REPO_ROOT/.env" ]; then
+  ENV_FILE="$REPO_ROOT/.env"
+else
+  ENV_FILE="$HOME/.expo-android-env/config.env"
+fi
 LABEL="com.expo-android-env.managed=true"
 CONTAINER_NAME="expo-android-env"
 IMAGE_NAME="expo-android-env:local"
@@ -126,15 +137,17 @@ require_macos() {
 }
 
 # --- Project resolution ------------------------------------------------------
-# Priority: explicit argument > PROJECT_DIR (env/.env) > current directory if it
-# looks like an Expo app. Lets agents call these scripts from the project root.
+# Priority: explicit argument > current directory if it looks like an Expo app
+# > PROJECT_DIR (env/.env). The current directory wins over the saved
+# PROJECT_DIR so `npx eaenv …` always targets the project you run it from.
 is_expo_project() {
   [ -f "$1/package.json" ] && grep -q '"expo"' "$1/package.json"
 }
 
 resolve_project() {
-  local candidate="${1:-${PROJECT_DIR:-}}"
+  local candidate="${1:-}"
   if [ -z "$candidate" ] && is_expo_project "$PWD"; then candidate="$PWD"; fi
+  [ -n "$candidate" ] || candidate="${PROJECT_DIR:-}"
   [ -n "$candidate" ] || die "No Expo project given. Pass a path, set PROJECT_DIR in $ENV_FILE, or run from your project folder."
   [ -d "$candidate" ] || die "Project directory not found: $candidate"
   PROJECT_DIR="$(cd "$candidate" && pwd -P)"
@@ -151,8 +164,8 @@ resolve_project() {
 # otherwise inside this repo.
 screenshot_dir() {
   local base="$REPO_ROOT"
-  if [ -n "${PROJECT_DIR:-}" ]; then base="$PROJECT_DIR"
-  elif is_expo_project "$PWD"; then base="$PWD"; fi
+  if is_expo_project "$PWD"; then base="$PWD"
+  elif [ -n "${PROJECT_DIR:-}" ]; then base="$PROJECT_DIR"; fi
   local dir="$base/$SCREENSHOT_DIR"
   mkdir -p "$dir"
   printf '%s\n' "$dir"

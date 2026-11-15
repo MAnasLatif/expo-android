@@ -93,6 +93,6 @@ if [ -n "$PLAN_IMAGE" ]; then
   docker image rm "$PLAN_IMAGE" >/dev/null && ok "Removed image $PLAN_IMAGE"
 fi
 if [ -n "$PLAN_SDK" ]; then
-  "$(dirname "$0")/emulator-stop.sh" >/dev/null 2>&1 || true
+  bash "$(dirname "$0")/emulator-stop.sh" >/dev/null 2>&1 || true
   rm -rf "$PLAN_SDK" && ok "Removed $PLAN_SDK"
 fi
