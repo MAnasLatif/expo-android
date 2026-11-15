@@ -1,0 +1,47 @@
+{
+  "name": "eaenv",
+  "version": "0.1.0",
+  "description": "Expo Android ENVironment: run and test Expo apps on a native Android emulator on macOS with the toolchain in Docker. Agent-friendly CLI for screenshots, taps, UI inspection and logs.",
+  "keywords": [
+    "expo",
+    "react-native",
+    "android",
+    "emulator",
+    "adb",
+    "docker",
+    "kiri",
+    "testing",
+    "ai-agents",
+    "claude-code"
+  ],
+  "license": "MIT",
+  "author": "M Anas Latif",
+  "homepage": "https://github.com/OWNER/expo-android#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OWNER/expo-android.git"
+  },
+  "bugs": {
+    "url": "https://github.com/OWNER/expo-android/issues"
+  },
+  "bin": {
+    "eaenv": "bin/eaenv.js"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "docker/",
+    "config/",
+    "docs/AGENTS.md",
+    "Dockerfile",
+    "docker-compose.yml",
+    ".dockerignore",
+    ".env.example"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
