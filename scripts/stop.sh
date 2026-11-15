@@ -16,5 +16,5 @@ compose down --remove-orphans >/dev/null 2>&1 || true
 ok "Container stopped (image, volumes and caches kept)"
 
 if [ "${1:-}" = "--all" ]; then
-  "$(dirname "$0")/emulator-stop.sh"
+  bash "$(dirname "$0")/emulator-stop.sh"
 fi
