@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Variables defined here are consumed by the scripts that source this file.
+# shellcheck disable=SC2034
 # =============================================================================
 # Shared helpers for every script in scripts/. Source it, don't execute it:
 #   source "$(dirname "$0")/lib/common.sh"
@@ -34,14 +36,26 @@ die()  { printf '%s ✗%s %s\n' "$C_RED" "$C_RESET" "$*" >&2; exit 1; }
 # --- Config loading ----------------------------------------------------------
 # Values already exported in the shell win over files (handy for CI/overrides).
 load_config() {
-  local preset_project="${PROJECT_DIR:-}"
+  # Remember any .env keys already set in the environment (e.g. CI or a
+  # one-off `ENV_HOME=... scripts/status.sh`) so .env cannot clobber them.
+  local keys k overrides=()
+  keys="$(sed -nE 's/^([A-Z_][A-Z0-9_]*)=.*/\1/p' "$REPO_ROOT/.env.example")"
+  for k in $keys; do
+    if [ -n "${!k:-}" ]; then overrides+=("$k=${!k}"); fi
+  done
+
   set -a
   # shellcheck disable=SC1090
   source "$VERSIONS_FILE"
   # shellcheck disable=SC1090
-  [ -f "$ENV_FILE" ] && source "$ENV_FILE"
+  if [ -f "$ENV_FILE" ]; then source "$ENV_FILE"; fi
   set +a
-  [ -n "$preset_project" ] && PROJECT_DIR="$preset_project"
+
+  local kv
+  for kv in ${overrides[@]+"${overrides[@]}"}; do
+    printf -v "${kv%%=*}" '%s' "${kv#*=}"
+    export "${kv%%=*}"
+  done
 
   # Defaults (mirror .env.example) so scripts work before .env exists.
   : "${ENV_HOME:=$HOME/.expoemu}"
