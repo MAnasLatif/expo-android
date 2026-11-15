@@ -22,9 +22,12 @@ for a in "$@"; do
 done
 resolve_project "$ARG_PROJECT"
 
-# --- 1. Image (built once, reused forever) ----------------------------------
+# --- 1. Image (built once; rebuilt only when its sources change) -------------
 if ! docker image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
   info "Image not found — building it once"
+  compose build
+elif image_outdated; then
+  info "Image sources changed (new version?) — rebuilding (cached layers reused)"
   compose build
 fi
 

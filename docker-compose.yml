@@ -34,6 +34,8 @@ services:
         ANDROID_EXTRA_PACKAGES: ${ANDROID_EXTRA_PACKAGES:-}
       labels:
         com.expoemu.managed: "true"
+        # Set by scripts/lib/common.sh; a mismatch makes start.sh rebuild.
+        com.expoemu.build-hash: "${BUILD_HASH:-unknown}"
     labels:
       com.expoemu.managed: "true"
     stdin_open: true

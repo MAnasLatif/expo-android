@@ -193,8 +193,25 @@ require_docker() {
   docker info >/dev/null 2>&1 || die "Docker is not running. Start Docker Desktop and retry."
 }
 
+# Content hash of everything that shapes the image. Stored as an image label
+# so a new package version (changed Dockerfile / versions) triggers a rebuild.
+image_build_hash() {
+  {
+    cat "$REPO_ROOT/Dockerfile" "$REPO_ROOT/docker/entrypoint.sh" "$VERSIONS_FILE"
+    printf '%s|%s\n' "${ANDROID_EXTRA_PACKAGES:-}" "${DOCKER_PLATFORM:-linux/amd64}"
+  } | shasum | cut -c1-12
+}
+
+# True when the image is missing or was built from different sources.
+image_outdated() {
+  local have
+  have="$(docker image inspect -f '{{index .Config.Labels "com.expoemu.build-hash"}}' "$IMAGE_NAME" 2>/dev/null || true)"
+  [ "$have" != "$(image_build_hash)" ]
+}
+
 # docker compose with both env files; shell env (PROJECT_DIR, ...) wins.
 compose() {
+  BUILD_HASH="$(image_build_hash)"; export BUILD_HASH
   local args=(--project-directory "$REPO_ROOT" -f "$COMPOSE_FILE" --env-file "$VERSIONS_FILE")
   [ -f "$ENV_FILE" ] && args+=(--env-file "$ENV_FILE")
   docker compose "${args[@]}" "$@"
