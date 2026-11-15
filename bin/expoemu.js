@@ -79,10 +79,15 @@ Other
 Docs: docs/AGENTS.md in the package (or the project README).`;
 
 // --- Helpers ---------------------------------------------------------------------
-function runScript(script, args) {
+function runScript(script, args, extraEnv = {}) {
   const file = path.join(SCRIPTS, script);
   // Invoke through bash so executable bits don't matter after npm install.
-  const r = spawnSync('bash', [file, ...args], { stdio: 'inherit', cwd: process.cwd() });
+  // EXPOEMU_CLI makes the scripts print hints as `npx expoemu …` commands.
+  const r = spawnSync('bash', [file, ...args], {
+    stdio: 'inherit',
+    cwd: process.cwd(),
+    env: { ...process.env, EXPOEMU_CLI: '1', ...extraEnv },
+  });
   if (r.error) {
     console.error(`expoemu: failed to run bash: ${r.error.message}`);
     return 1;
@@ -105,9 +110,11 @@ function up(args) {
     ['open-app.sh', []],
   ];
   for (const [script, a] of steps) {
-    const code = runScript(script, a);
+    // Intermediate "next step" hints are noise here: up runs those steps itself.
+    const code = runScript(script, a, { EXPOEMU_QUIET_HINTS: '1' });
     if (code !== 0) return code;
   }
+  console.error('\nexpoemu: ready. Try: npx expoemu screenshot  |  npx expoemu ui  |  npx expoemu status');
   return 0;
 }
 

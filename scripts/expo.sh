@@ -16,7 +16,7 @@
 source "$(dirname "$0")/lib/common.sh"
 load_config
 require_docker
-container_running || die "Container not running. Start it with: scripts/start.sh /path/to/expo-app"
+container_running || die "Container not running. Start it with: $(cmd start.sh) /path/to/expo-app"
 
 LOG=/tmp/metro.log
 in_container() { docker exec -u expo -w /workspace "$CONTAINER_NAME" bash -lc "$1"; }
@@ -49,7 +49,7 @@ case "${1:-}" in
     for _ in $(seq 1 90); do metro_ready && break; sleep 2; done
     metro_ready || { in_container "tail -30 $LOG" >&2; die "Metro did not become ready"; }
     reverse_port
-    ok "Metro ready at http://127.0.0.1:$METRO_PORT — open the app with: scripts/open-app.sh"
+    ok "Metro ready at http://127.0.0.1:$METRO_PORT — open the app with: $(cmd open-app.sh)"
     exit 0 ;;
 esac
 

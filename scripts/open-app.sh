@@ -12,7 +12,7 @@ source "$(dirname "$0")/lib/common.sh"
 load_config
 require_docker
 require_device
-container_running || die "Container not running. Start it with: scripts/start.sh /path/to/expo-app"
+container_running || die "Container not running. Start it with: $(cmd start.sh) /path/to/expo-app"
 
 REINSTALL=0 URL="exp://127.0.0.1:$METRO_PORT"
 while [ $# -gt 0 ]; do
@@ -47,7 +47,7 @@ fi
 # --- 2. Tunnel + deep link ------------------------------------------------------
 adb_host reverse "tcp:$METRO_PORT" "tcp:$METRO_PORT" >/dev/null
 curl -fs --max-time 2 "http://127.0.0.1:$METRO_PORT/status" | grep -q running \
-  || warn "Metro is not responding on 127.0.0.1:$METRO_PORT — start it with scripts/expo.sh"
+  || warn "Metro is not responding on 127.0.0.1:$METRO_PORT — start it with $(cmd expo.sh)"
 # Force-stop first: after a quick-boot snapshot Expo Go may still show an old
 # experience, and a deep link to it only brings it to the front without
 # fetching a fresh bundle from the current Metro.
