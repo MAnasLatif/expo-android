@@ -17,6 +17,24 @@ jobs:
       - name: ShellCheck
         run: shellcheck -x -S warning scripts/*.sh scripts/lib/*.sh docker/*.sh
 
+  # npm package: CLI unit tests + the tarball ships what the scripts need.
+  cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Unit tests
+        run: npm test
+      - name: Package contents
+        run: |
+          npm pack --dry-run --json > pack.json
+          for f in bin/expoemu.js scripts/lib/common.sh Dockerfile docker-compose.yml config/versions.env docker/entrypoint.sh .env.example; do
+            grep -q "\"path\": \"$f\"" pack.json || { echo "missing from package: $f"; exit 1; }
+          done
+          if grep -q '"path": ".env"' pack.json; then echo ".env must never be published"; exit 1; fi
+
   # Dockerfile / compose defaults must match config/versions.env.
   versions:
     runs-on: ubuntu-latest
