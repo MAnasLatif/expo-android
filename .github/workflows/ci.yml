@@ -50,7 +50,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate docker-compose.yml
         run: PROJECT_DIR="$PWD" docker compose --env-file config/versions.env config --quiet
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       - name: Build image
         uses: docker/build-push-action@v6
         with:
