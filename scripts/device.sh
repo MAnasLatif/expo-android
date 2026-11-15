@@ -2,28 +2,46 @@
 # =============================================================================
 # Drive the emulator from the terminal — built for humans and AI agents.
 #
-#   scripts/device.sh tap X Y                 tap at pixel coordinates
-#   scripts/device.sh swipe X1 Y1 X2 Y2 [ms]  swipe (default 300 ms)
-#   scripts/device.sh scroll down|up          scroll the middle of the screen
-#   scripts/device.sh text "hello world"      type into the focused field
-#   scripts/device.sh key BACK|HOME|ENTER|…   press a key (KEYCODE_ name or number)
-#   scripts/device.sh back | home             shortcuts
-#   scripts/device.sh ui                      list on-screen elements + tap centers
-#   scripts/device.sh find "Sign in"          print center "X Y" of matching element
-#   scripts/device.sh tap-text "Sign in"      find an element by text and tap it
-#   scripts/device.sh logcat [--errors|--all] [-n N] [--follow] [--clear]
-#   scripts/device.sh reload                  reload the JS bundle (Expo Go)
-#   scripts/device.sh devmenu                 open the React Native dev menu
-#   scripts/device.sh open-url URL            open a deep link
-#   scripts/device.sh activity                show the foreground app/activity
-#   scripts/device.sh size                    screen size in pixels
-#   scripts/device.sh adb ARGS…               raw adb against the emulator
+# TOUCH
+#   tap X Y                      tap at pixel coordinates
+#   double-tap X Y               two quick taps
+#   long-press X Y [ms]          press and hold (default 800 ms)
+#   swipe X1 Y1 X2 Y2 [ms]       swipe (default 300 ms)
+#   drag X1 Y1 X2 Y2 [ms]        drag and drop (default 1000 ms)
+#   scroll down|up|left|right    scroll the middle of the screen
+#
+# ELEMENTS (match visible text, accessibilityLabel, testID or placeholder;
+#           exact match preferred, else case-insensitive "contains")
+#   ui                           list on-screen elements with tap coordinates
+#   find "Sign in"               print center "X Y" of the element
+#   tap-text "Sign in"           tap an element
+#   long-press-text "Item" [ms]  long-press an element
+#   scroll-to "Row 30" [--up] [--max N]   scroll until the element is visible
+#
+# KEYBOARD & KEYS
+#   text "hello world"           type into the focused field
+#   clear                        clear the focused field
+#   fill "Email" "me@x.com" [--keep-keyboard]
+#                                tap a field, clear it, type, hide the keyboard
+#   hide-keyboard                close the on-screen keyboard if shown
+#   key NAME|CODE                any key (BACK, ENTER, TAB, VOLUME_UP, …)
+#   back | home | recents | enter
+#   lock | unlock                screen off / wake and dismiss the lock screen
+#
+# EXPO / APP
+#   reload                       reload the JS bundle
+#   devmenu                      open the React Native dev menu
+#   open-url URL                 open a deep link
+#   activity                     show the foreground app/activity
+#   size                         screen size in pixels
+#   logcat [--errors|--all] [-n N] [--follow] [--clear]
+#   adb ARGS…                    raw adb against the emulator
 # =============================================================================
 source "$(dirname "$0")/lib/common.sh"
 load_config
 
 cmd="${1:-help}"; shift || true
-case "$cmd" in help|-h|--help) sed -n '2,21p' "$0"; exit 0 ;; esac
+case "$cmd" in help|-h|--help) sed -n '2,41p' "$0"; exit 0 ;; esac
 require_device
 sh() { adb_host shell "$@"; }
 
@@ -32,64 +50,189 @@ screen_size() {
   sh wm size | tr -d '\r' | awk -F'[ x]' '/Override/ {w=$3; h=$4} /Physical/ && !w {w=$3; h=$4} END {print w, h}'
 }
 
+# Bounds "x1 y1 x2 y2" of the largest scrollable view on screen, or the whole
+# screen if none. Swipes must START inside a scroll view to scroll it.
+scroll_area() {
+  local area
+  sh uiautomator dump /sdcard/window_dump.xml >/dev/null 2>&1 || true
+  area="$(adb_host exec-out cat /sdcard/window_dump.xml 2>/dev/null | perl -ne '
+    while (/<node ([^>]*?)\/?>/g) {
+      my $a = $1;
+      next unless $a =~ /scrollable="true"/;
+      my ($x1,$y1,$x2,$y2) = $a =~ /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/;
+      my $s = ($x2-$x1)*($y2-$y1);
+      if ($s > $best) { $best = $s; $b = "$x1 $y1 $x2 $y2" }
+    }
+    END { print $b if $b }')"
+  if [ -n "$area" ]; then echo "$area"; else read -r w h < <(screen_size); echo "0 0 $w $h"; fi
+}
+
 # Dump the UI hierarchy and print one line per meaningful node:
-#   <centerX> <centerY> | text | content-desc | resource-id | class | clickable
+#   <centerX> <centerY> | text | content-desc | resource-id | class | flags
+# text falls back to the field's hint (placeholder) when the field is empty.
 ui_rows() {
   sh uiautomator dump /sdcard/window_dump.xml >/dev/null 2>&1 || die "uiautomator dump failed (is the screen locked or animating?)"
   adb_host exec-out cat /sdcard/window_dump.xml | perl -ne '
     while (/<node ([^>]*?)\/?>/g) {
       my $a = $1; my %h;
       $h{$1} = $2 while $a =~ /([\w-]+)="([^"]*)"/g;
-      next unless length($h{text}) || length($h{"content-desc"}) || $h{clickable} eq "true";
+      my $text = length($h{text}) ? $h{text} : ($h{hint} // "");
+      # React Native testIDs appear as bare resource-ids ("login-button");
+      # framework/app ids ("android:id/content") are noise, so drop them.
+      my $id = $h{"resource-id"} // ""; $id = "" if $id =~ /:id\//;
+      next unless length($text) || length($h{"content-desc"}) || length($id) || $h{clickable} eq "true";
       my ($x1,$y1,$x2,$y2) = $h{bounds} =~ /\[(\d+),(\d+)\]\[(\d+),(\d+)\]/;
       next if $x2 <= $x1 || $y2 <= $y1;
+      my @f;
+      push @f, "clickable" if $h{clickable} eq "true";
+      push @f, "focused"   if $h{focused} eq "true";
+      push @f, "checked"   if $h{checked} eq "true";
+      push @f, "disabled"  if $h{enabled} eq "false";
       printf "%d %d | %s | %s | %s | %s | %s\n", ($x1+$x2)/2, ($y1+$y2)/2,
-        $h{text}, $h{"content-desc"}, $h{"resource-id"}, $h{class},
-        $h{clickable} eq "true" ? "clickable" : "";
+        $text, $h{"content-desc"}, $id, $h{class}, join(",", @f);
     }'
 }
 
-# Center of the first element whose text or content-desc contains $1 (case-insensitive).
+# Center "X Y" of the element matching $1 in text, content-desc or resource-id
+# (testID). Exact (case-insensitive) match wins over a "contains" match.
 find_xy() {
-  local needle="$1"
-  ui_rows | awk -F' \\| ' -v n="$(printf '%s' "$needle" | tr '[:upper:]' '[:lower:]')" '
-    { t = tolower($2); d = tolower($3) }
-    index(t, n) || index(d, n) { split($1, xy, " "); print xy[1], xy[2]; found = 1; exit }
-    END { exit !found }'
+  local needle
+  needle="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  ui_rows | awk -F' \\| ' -v n="$needle" '
+    {
+      t = tolower($2); d = tolower($3); id = tolower($4)
+      split($1, xy, " ")
+      if (!exact && (t == n || d == n || id == n)) { exact = xy[1] " " xy[2] }
+      if (!partial && (index(t, n) || index(d, n) || index(id, n))) { partial = xy[1] " " xy[2] }
+    }
+    END {
+      if (exact) print exact; else if (partial) print partial; else exit 1
+    }'
+}
+
+need_xy() { find_xy "$1" || die "No element matching: $1"; }
+
+# `input text` needs spaces as %s and shell metacharacters escaped.
+type_text() {
+  local escaped
+  escaped="$(printf '%s' "$1" | sed -e 's/[][(){}<>|;&*?~^$`"'"'"'\\]/\\&/g' -e 's/ /%s/g')"
+  sh input text "$escaped"
+}
+
+# Select-all + delete in the focused field (keycombination needs Android 13+;
+# fall back to many DELs after moving to the end).
+clear_field() {
+  if ! sh input keycombination KEYCODE_CTRL_LEFT KEYCODE_A >/dev/null 2>&1; then
+    sh input keyevent KEYCODE_MOVE_END
+    sh "for i in \$(seq 1 80); do input keyevent KEYCODE_DEL; done"
+    return
+  fi
+  sh input keyevent KEYCODE_DEL
+}
+
+# Capture first, match after: `cmd | grep -q` under `set -o pipefail` can fail
+# with SIGPIPE (exit 141) when grep exits before the writer finishes.
+keyboard_shown() {
+  local out
+  out="$(sh dumpsys window InputMethod 2>/dev/null)"
+  [[ "$out" == *"isVisible=true"* ]]
+}
+
+# Hide the on-screen keyboard if it is (or is about to be) visible. The IME
+# animates in after a field gets focus, so poll briefly instead of checking once.
+# Anything that swipes or taps app content calls this first: a swipe across
+# the keyboard becomes glide typing, and a tap may hit a key instead of the app.
+ensure_keyboard_hidden() {
+  local tries="${1:-5}" i
+  for ((i = 0; i < tries; i++)); do
+    if keyboard_shown; then sh input keyevent KEYCODE_BACK; sleep 0.3; return 0; fi
+    sleep 0.2
+  done
+  return 1
 }
 
 case "$cmd" in
-  tap)      [ $# -eq 2 ] || die "usage: tap X Y"; sh input tap "$1" "$2" ;;
-  swipe)    [ $# -ge 4 ] || die "usage: swipe X1 Y1 X2 Y2 [ms]"; sh input swipe "$1" "$2" "$3" "$4" "${5:-300}" ;;
+  # --- Touch ------------------------------------------------------------------
+  tap)        [ $# -eq 2 ] || die "usage: tap X Y"; sh input tap "$1" "$2" ;;
+  double-tap) [ $# -eq 2 ] || die "usage: double-tap X Y"
+              # One shell call keeps both taps within the double-tap window.
+              sh "input tap $1 $2; input tap $1 $2" ;;
+  long-press) [ $# -ge 2 ] || die "usage: long-press X Y [ms]"
+              sh input swipe "$1" "$2" "$1" "$2" "${3:-800}" ;;
+  swipe)      [ $# -ge 4 ] || die "usage: swipe X1 Y1 X2 Y2 [ms]"; sh input swipe "$1" "$2" "$3" "$4" "${5:-300}" ;;
+  drag)       [ $# -ge 4 ] || die "usage: drag X1 Y1 X2 Y2 [ms]"; sh input draganddrop "$1" "$2" "$3" "$4" "${5:-1000}" ;;
   scroll)
-    read -r w h < <(screen_size)
-    x=$((w / 2)); top=$((h * 30 / 100)); bottom=$((h * 70 / 100))
+    ensure_keyboard_hidden 1 || true
+    # Swipe within the scrollable container (25%..75% of its size).
+    read -r ax1 ay1 ax2 ay2 < <(scroll_area)
+    x=$(((ax1 + ax2) / 2)); y=$(((ay1 + ay2) / 2))
+    top=$((ay1 + (ay2 - ay1) * 25 / 100)); bottom=$((ay1 + (ay2 - ay1) * 75 / 100))
+    left=$((ax1 + (ax2 - ax1) * 20 / 100)); right=$((ax1 + (ax2 - ax1) * 80 / 100))
     case "${1:-down}" in
-      down) sh input swipe "$x" "$bottom" "$x" "$top" 300 ;;   # content moves up
-      up)   sh input swipe "$x" "$top" "$x" "$bottom" 300 ;;
-      *) die "usage: scroll down|up" ;;
+      down)  sh input swipe "$x" "$bottom" "$x" "$top" 300 ;;   # content moves up
+      up)    sh input swipe "$x" "$top" "$x" "$bottom" 300 ;;
+      right) sh input swipe "$right" "$y" "$left" "$y" 300 ;;   # content moves left
+      left)  sh input swipe "$left" "$y" "$right" "$y" 300 ;;
+      *) die "usage: scroll down|up|left|right" ;;
     esac ;;
-  text)
-    [ $# -ge 1 ] || die "usage: text \"string\""
-    # `input text` needs spaces as %s and shell metacharacters escaped.
-    escaped="$(printf '%s' "$*" | sed -e 's/[][(){}<>|;&*?~^$`"'"'"'\\]/\\&/g' -e 's/ /%s/g')"
-    sh input text "$escaped" ;;
-  key)
-    [ $# -eq 1 ] || die "usage: key NAME|CODE"
-    k="$1"; [[ "$k" =~ ^[0-9]+$ ]] || k="KEYCODE_${k#KEYCODE_}"
-    sh input keyevent "$k" ;;
-  back)     sh input keyevent KEYCODE_BACK ;;
-  home)     sh input keyevent KEYCODE_HOME ;;
+
+  # --- Elements ---------------------------------------------------------------
   ui)
-    echo "# centerX centerY | text | content-desc | resource-id | class | clickable"
+    echo "# centerX centerY | text | content-desc | testID | class | flags"
     ui_rows ;;
-  find)     [ $# -ge 1 ] || die "usage: find \"text\""; find_xy "$*" || die "No element matching: $*" ;;
+  find)       [ $# -ge 1 ] || die "usage: find \"text\""; need_xy "$*" ;;
   tap-text)
     [ $# -ge 1 ] || die "usage: tap-text \"text\""
-    xy="$(find_xy "$*")" || die "No element matching: $*"
+    ensure_keyboard_hidden 1 || true   # element may sit under the keyboard
+    xy="$(need_xy "$*")"
     # shellcheck disable=SC2086
     sh input tap $xy
     ok "Tapped \"$*\" at $xy" ;;
+  long-press-text)
+    [ $# -ge 1 ] || die "usage: long-press-text \"text\" [ms]"
+    ensure_keyboard_hidden 1 || true
+    xy="$(need_xy "$1")"; read -r x y <<<"$xy"
+    sh input swipe "$x" "$y" "$x" "$y" "${2:-800}"
+    ok "Long-pressed \"$1\" at $xy" ;;
+  scroll-to)
+    [ $# -ge 1 ] || die "usage: scroll-to \"text\" [--up] [--max N]"
+    needle="$1"; shift; dir=down; max=15
+    while [ $# -gt 0 ]; do
+      case "$1" in --up) dir=up ;; --max) max="$2"; shift ;; *) die "unknown option: $1" ;; esac; shift
+    done
+    for ((i = 0; i <= max; i++)); do
+      if xy="$(find_xy "$needle")"; then echo "$xy"; exit 0; fi
+      [ "$i" -lt "$max" ] && bash "$0" scroll "$dir" && sleep 0.4
+    done
+    die "\"$needle\" not found after $max scrolls" ;;
+
+  # --- Keyboard & keys --------------------------------------------------------
+  text)       [ $# -ge 1 ] || die "usage: text \"string\""; type_text "$*" ;;
+  clear)      clear_field ;;
+  fill)
+    [ $# -ge 2 ] || die "usage: fill \"field text/testID\" \"value\" [--keep-keyboard]"
+    ensure_keyboard_hidden 1 || true
+    xy="$(need_xy "$1")"
+    # shellcheck disable=SC2086
+    sh input tap $xy
+    sleep 0.3; clear_field; type_text "$2"
+    # Hide the keyboard so it can't cover the next element an agent taps.
+    [ "${3:-}" = "--keep-keyboard" ] || ensure_keyboard_hidden || true
+    ok "Filled \"$1\" with \"$2\"" ;;
+  hide-keyboard)
+    if ensure_keyboard_hidden; then ok "Keyboard hidden"; else ok "Keyboard not shown"; fi ;;
+  key)
+    [ $# -eq 1 ] || die "usage: key NAME|CODE"
+    k="$1"; [[ "$k" =~ ^[0-9]+$ ]] || k="KEYCODE_$(printf '%s' "${k#KEYCODE_}" | tr '[:lower:]' '[:upper:]')"
+    sh input keyevent "$k" ;;
+  back)       sh input keyevent KEYCODE_BACK ;;
+  home)       sh input keyevent KEYCODE_HOME ;;
+  recents)    sh input keyevent KEYCODE_APP_SWITCH ;;
+  enter)      sh input keyevent KEYCODE_ENTER ;;
+  lock)       sh input keyevent KEYCODE_SLEEP ;;
+  unlock)     sh input keyevent KEYCODE_WAKEUP; sh wm dismiss-keyguard ;;
+
+  # --- Expo / app ---------------------------------------------------------------
   logcat)
     n=300 mode=app follow=0
     while [ $# -gt 0 ]; do
@@ -110,11 +253,13 @@ case "$cmd" in
     # before filtering and usually return nothing).
     if [ "$follow" = 1 ]; then adb_host logcat -v time ${filter[@]+"${filter[@]}"}
     else adb_host logcat -d -v time ${filter[@]+"${filter[@]}"} | tail -n "$n"; fi ;;
-  reload)   sh input keyevent KEYCODE_R KEYCODE_R; ok "Reload requested" ;;
-  devmenu)  sh input keyevent KEYCODE_MENU ;;
-  open-url) [ $# -eq 1 ] || die "usage: open-url URL"; sh am start -a android.intent.action.VIEW -d "$1" >/dev/null ;;
-  activity) sh dumpsys activity activities | tr -d '\r' | grep -m1 -E 'topResumedActivity|mResumedActivity' | sed 's/^ *//' ;;
-  size)     screen_size ;;
-  adb)      adb_host "$@" ;;
+  reload)     sh input keyevent KEYCODE_R KEYCODE_R; ok "Reload requested" ;;
+  devmenu)    sh input keyevent KEYCODE_MENU ;;
+  open-url)   [ $# -eq 1 ] || die "usage: open-url URL"; sh am start -a android.intent.action.VIEW -d "$1" >/dev/null ;;
+  # awk reads all input (no early exit), avoiding SIGPIPE under pipefail.
+  activity)   sh dumpsys activity activities | tr -d '\r' \
+                | awk '/topResumedActivity|mResumedActivity/ && !f { sub(/^ */, ""); print; f = 1 }' ;;
+  size)       screen_size ;;
+  adb)        adb_host "$@" ;;
   *) die "Unknown command: $cmd (try: $(cmd device.sh)$([ -n "${EXPOEMU_CLI:-}" ] || echo ' help'))" ;;
 esac
