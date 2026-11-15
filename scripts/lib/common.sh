@@ -145,6 +145,19 @@ compose() {
   docker compose "${args[@]}" "$@"
 }
 
+# The engine rejects `--cpus` above its own CPU count ("range of CPUs is from
+# 0.01 to N"). Engines with small VMs (Kiri defaults to 2 CPUs, Docker Desktop
+# can be set low) would fail to start the container, so cap the limit.
+fit_resource_limits() {
+  local ncpu want
+  ncpu="$(docker info -f '{{.NCPU}}' 2>/dev/null || true)"
+  want="${CONTAINER_CPUS:-4}"
+  if [ -n "$ncpu" ] && awk -v w="$want" -v n="$ncpu" 'BEGIN { exit !(w > n) }'; then
+    warn "CONTAINER_CPUS=$want exceeds the engine's $ncpu CPUs — using $ncpu"
+    export CONTAINER_CPUS="$ncpu"
+  fi
+}
+
 container_running() {
   [ "$(docker inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" = "true" ]
 }

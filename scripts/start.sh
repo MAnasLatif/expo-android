@@ -30,6 +30,7 @@ fi
 
 # --- 2. Container (recreated automatically if the project changed) --------
 info "Starting container for $PROJECT_DIR"
+fit_resource_limits
 compose up -d --remove-orphans >/dev/null
 ok "Container $CONTAINER_NAME running (project mounted at /workspace)"
 
