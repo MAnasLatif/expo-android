@@ -1,6 +1,6 @@
-# expo-android-environment
+# expo-android
 
-[![CI](https://github.com/OWNER/expo-android-environment/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
+[![CI](https://github.com/OWNER/expo-android/actions/workflows/ci.yml/badge.svg)](../../actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Run and test **Expo / React Native apps on a real Android emulator on your
@@ -38,8 +38,8 @@ Mac** without installing Android Studio, Java or the Android SDK system-wide.
 
 ```bash
 # 1. Get the tools (anywhere you like)
-git clone https://github.com/OWNER/expo-android-environment.git ~/tools/expo-android-environment
-cd ~/tools/expo-android-environment
+git clone https://github.com/OWNER/expo-android.git ~/tools/expo-android
+cd ~/tools/expo-android
 
 # 2. One-time setup: isolated SDK + Pixel AVD + Docker image (~10 min)
 scripts/setup.sh --project ~/code/my-expo-app
@@ -89,10 +89,10 @@ The scripts work from any directory, so an agent working in your Expo project
 can call them by absolute path:
 
 ```bash
-~/tools/expo-android-environment/scripts/screenshot.sh home      # → prints PNG path
-~/tools/expo-android-environment/scripts/device.sh ui            # elements + tap coordinates
-~/tools/expo-android-environment/scripts/device.sh tap-text "Sign in"
-~/tools/expo-android-environment/scripts/device.sh logcat --errors
+~/tools/expo-android/scripts/screenshot.sh home      # → prints PNG path
+~/tools/expo-android/scripts/device.sh ui            # elements + tap coordinates
+~/tools/expo-android/scripts/device.sh tap-text "Sign in"
+~/tools/expo-android/scripts/device.sh logcat --errors
 ```
 
 [docs/AGENTS.md](docs/AGENTS.md) has a ready-made snippet for your project's

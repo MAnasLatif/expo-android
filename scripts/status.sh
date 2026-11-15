@@ -13,7 +13,7 @@ pass() { ok "$1"; }
 fail() { printf '%s ✗%s %s\n' "$C_RED" "$C_RESET" "$1" >&2; FAIL=1; }
 note() { warn "$1"; }
 
-echo "expo-android-environment status" >&2
+echo "expo-android status" >&2
 
 # --- Host SDK ------------------------------------------------------------------
 if [ -x "$ADB" ] && [ -x "$EMULATOR_BIN" ]; then

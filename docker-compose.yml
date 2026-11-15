@@ -1,5 +1,5 @@
 # =============================================================================
-# expo-android-environment — Docker Compose
+# expo-android — Docker Compose
 #
 # Works with Docker Desktop (default) and Kiri (CONTAINER_RUNTIME=kiri in .env);
 # both provide host.docker.internal → the Mac's loopback.

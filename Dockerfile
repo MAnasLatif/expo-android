@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # =============================================================================
-# expo-android-environment — development container
+# expo-android — development container
 #
 # Contains: Ubuntu, JDK 17, Node.js LTS, Bun, Android cmdline-tools and
 # platform-tools (adb). The Android Emulator is NOT in here — it runs natively
@@ -25,7 +25,7 @@ ARG PLATFORM_TOOLS_LINUX_SHA1=e1579b288a7ae4e9bc28dedec6a154d78b3c04ed
 # Only needed for native builds (expo run:android). Expo Go needs none.
 ARG ANDROID_EXTRA_PACKAGES=""
 
-LABEL org.opencontainers.image.title="expo-android-environment" \
+LABEL org.opencontainers.image.title="expo-android" \
       org.opencontainers.image.description="Expo + Bun + Android adb toolchain; pairs with a native macOS Android Emulator" \
       org.opencontainers.image.licenses="MIT" \
       com.expo-android-env.managed="true"

@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve **expo-android-environment**. Contributions of all
+Thanks for helping improve **expo-android**. Contributions of all
 sizes are welcome: bug reports, docs, version bumps, new platforms.
 
 ## Ground rules
@@ -20,8 +20,8 @@ sizes are welcome: bug reports, docs, version bumps, new platforms.
 ## Development setup
 
 ```bash
-git clone https://github.com/<you>/expo-android-environment.git
-cd expo-android-environment
+git clone https://github.com/<you>/expo-android.git
+cd expo-android
 scripts/setup.sh --project /path/to/any/expo-app
 ```
 

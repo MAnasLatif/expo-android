@@ -6,7 +6,7 @@ project terminal. The repo installs no plugin or MCP server and changes no
 agent configuration.
 
 > **Tip for users:** copy the "Snippet for your project" section below into your
-> Expo project's `CLAUDE.md` / `AGENTS.md`, replacing `$EAE` with the absolute
+> Expo project's `CLAUDE.md` / `AGENTS.md`, replacing `$EXPO_ANDROID` with the absolute
 > path to your clone of this repository.
 
 ## Prerequisites (done once by a human)
@@ -18,32 +18,32 @@ scripts/setup.sh --project /path/to/expo-app   # SDK, AVD, Docker image
 ## Snippet for your project
 
 ````markdown
-## Android testing (expo-android-environment)
+## Android testing (expo-android)
 
-The Android tools live in `$EAE` (e.g. `~/tools/expo-android-environment`).
+The Android tools live in `$EXPO_ANDROID` (e.g. `~/tools/expo-android`).
 Run these from this project's root:
 
 | Goal | Command |
 |------|---------|
-| Check what is running | `$EAE/scripts/status.sh` |
-| Boot the phone | `$EAE/scripts/emulator-start.sh --no-animations` |
-| Start the container | `$EAE/scripts/start.sh "$PWD"` |
-| Start Metro (non-blocking) | `$EAE/scripts/expo.sh --background` |
-| Open app in Expo Go | `$EAE/scripts/open-app.sh` |
-| Screenshot (prints path) | `$EAE/scripts/screenshot.sh <name>` |
-| List on-screen elements | `$EAE/scripts/device.sh ui` |
-| Tap by visible text | `$EAE/scripts/device.sh tap-text "Login"` |
-| Tap / swipe / scroll | `$EAE/scripts/device.sh tap X Y` · `swipe X1 Y1 X2 Y2` · `scroll down` |
-| Type text | `$EAE/scripts/device.sh text "hello"` |
-| Back / Home | `$EAE/scripts/device.sh back` · `home` |
-| JS logs / errors | `$EAE/scripts/device.sh logcat` · `logcat --errors` |
-| Metro logs | `$EAE/scripts/expo.sh --logs` |
-| Reload JS | `$EAE/scripts/device.sh reload` |
-| Run a command in the container | `$EAE/scripts/shell.sh bun add <pkg>` |
+| Check what is running | `$EXPO_ANDROID/scripts/status.sh` |
+| Boot the phone | `$EXPO_ANDROID/scripts/emulator-start.sh --no-animations` |
+| Start the container | `$EXPO_ANDROID/scripts/start.sh "$PWD"` |
+| Start Metro (non-blocking) | `$EXPO_ANDROID/scripts/expo.sh --background` |
+| Open app in Expo Go | `$EXPO_ANDROID/scripts/open-app.sh` |
+| Screenshot (prints path) | `$EXPO_ANDROID/scripts/screenshot.sh <name>` |
+| List on-screen elements | `$EXPO_ANDROID/scripts/device.sh ui` |
+| Tap by visible text | `$EXPO_ANDROID/scripts/device.sh tap-text "Login"` |
+| Tap / swipe / scroll | `$EXPO_ANDROID/scripts/device.sh tap X Y` · `swipe X1 Y1 X2 Y2` · `scroll down` |
+| Type text | `$EXPO_ANDROID/scripts/device.sh text "hello"` |
+| Back / Home | `$EXPO_ANDROID/scripts/device.sh back` · `home` |
+| JS logs / errors | `$EXPO_ANDROID/scripts/device.sh logcat` · `logcat --errors` |
+| Metro logs | `$EXPO_ANDROID/scripts/expo.sh --logs` |
+| Reload JS | `$EXPO_ANDROID/scripts/device.sh reload` |
+| Run a command in the container | `$EXPO_ANDROID/scripts/shell.sh bun add <pkg>` |
 
 Screenshots are saved to `./.android-screenshots/` (latest one is always
 `./.android-screenshots/latest.png`). Read the PNG to inspect the UI.
-Install packages through `$EAE/scripts/shell.sh bun add …` so Linux
+Install packages through `$EXPO_ANDROID/scripts/shell.sh bun add …` so Linux
 `node_modules` stay in sync inside the container.
 ````
 
