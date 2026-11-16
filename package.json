@@ -1,6 +1,6 @@
 {
   "name": "expoemu",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Expo Emulator: run and test Expo apps on a native Android emulator on macOS with the toolchain in Docker. Agent-friendly CLI for screenshots, taps, UI inspection and logs.",
   "keywords": [
     "expo",
