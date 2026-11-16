@@ -188,6 +188,9 @@ screenshot_dir() {
   elif [ -n "${PROJECT_DIR:-}" ]; then base="$PROJECT_DIR"; fi
   local dir="$base/$SCREENSHOT_DIR"
   mkdir -p "$dir"
+  # Self-ignoring folder: screenshots/recordings never get committed, and the
+  # user's own .gitignore is left untouched.
+  [ -f "$dir/.gitignore" ] || printf '# Created by expoemu — ignore everything in this folder\n*\n' > "$dir/.gitignore"
   printf '%s\n' "$dir"
 }
 

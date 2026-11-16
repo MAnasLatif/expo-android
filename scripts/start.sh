@@ -42,8 +42,19 @@ if [ "$INSTALL" = 1 ]; then
   if docker exec "$CONTAINER_NAME" test -d /workspace/node_modules/.bin; then
     ok "node_modules present (volume expoemu_node_modules_$PROJECT_SLUG)"
   else
-    info "Installing dependencies with bun (first run for this project)"
-    docker exec -u expo -w /workspace "$CONTAINER_NAME" bun install
+    # Use the project's own package manager in a mode that never rewrites
+    # its files: a plain `bun install` would add a bun.lock to npm/yarn/pnpm
+    # projects. node_modules itself lives in a Docker volume, not the project.
+    p="$PROJECT_DIR"
+    if   [ -f "$p/bun.lock" ] || [ -f "$p/bun.lockb" ]; then pm=bun;  install="bun install --frozen-lockfile || bun install"
+    elif [ -f "$p/package-lock.json" ];  then pm=npm;  install="npm ci --no-audit --no-fund"
+    elif [ -f "$p/pnpm-lock.yaml" ];     then pm=pnpm; install="corepack pnpm install --frozen-lockfile"
+    elif [ -f "$p/yarn.lock" ];          then pm=yarn; install="corepack yarn install --frozen-lockfile || corepack yarn install --immutable"
+    else                                      pm=bun;  install="bun install --no-save"   # no lockfile: don't create one
+    fi
+    info "Installing dependencies with $pm (first run for this project; project files are not modified)"
+    docker exec -u expo -w /workspace -e COREPACK_ENABLE_DOWNLOAD_PROMPT=0 "$CONTAINER_NAME" bash -lc "$install" \
+      || die "Dependency install failed ($pm). Fix it in the project, then re-run: $(cmd start.sh)"
     ok "Dependencies installed"
   fi
 fi
