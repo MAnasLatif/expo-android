@@ -119,6 +119,19 @@ to important elements. It is the most stable selector.
   `--device NAME`. For `adb`, `shell` and `expo`, put `--device` before the
   command: `expoemu --device tablet adb shell …`.
 
+## Saved tests (flows)
+
+Projects can keep repeatable tests in `.expoemu/flows/*.flow`, one expoemu
+command per line (see [references/workflows.md](references/workflows.md#save-a-flow-as-a-regression-test)).
+
+```bash
+expoemu run                    # all flows; exit 1 if any fails, report under .android-screenshots/runs/
+expoemu run .expoemu/flows/login.flow --var EMAIL=test@example.com
+```
+
+- If `.expoemu/flows/` exists, run it after your code changes to catch regressions.
+- After you verify a new flow by hand, offer to save it as a `.flow` file.
+
 ## Several devices at once
 
 ```bash

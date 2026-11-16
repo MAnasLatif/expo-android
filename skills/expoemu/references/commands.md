@@ -17,6 +17,7 @@ Add `--device NAME` (or `-d NAME`) to any command to target one device; for
 - [Wait and assert](#wait-and-assert)
 - [Device state](#device-state)
 - [App control and debugging](#app-control-and-debugging)
+- [Flows: saved tests](#flows-saved-tests)
 - [Maintenance](#maintenance)
 - [Configuration](#configuration)
 
@@ -150,6 +151,22 @@ All reversible. Reset what you change.
 | `devmenu` | Open the React Native dev menu. |
 | `open-url URL` | Open a deep link (`myapp://path` or `exp://…`). |
 | `adb ARGS…` | Raw adb against the target device. |
+
+## Flows: saved tests
+
+| Command | What it does |
+|---------|--------------|
+| `run [FILE\|DIR…]` | Run `.flow` files (default: every file in `./.expoemu/flows/`). Each flow stops at its first failing step and saves a failure screenshot + error log. Exit 1 if any flow failed. |
+| `run --var KEY=VALUE` | Value for `${KEY}` in flows (repeatable); environment variables work too. |
+| `run --bail` · `run --report DIR` | Stop after the first failing flow / write the report elsewhere. |
+| `run --init` | Create `./.expoemu/flows/example.flow`. |
+
+A `.flow` file holds one expoemu command per line, without the `expoemu`
+prefix. The first `#` comment is its title, and `${VAR:-default}` is
+expanded. `setup`, `cleanup`, `install`, `uninstall`, `update`, `run` and
+`device` are not allowed in flows. Reports go to
+`.android-screenshots/runs/<time>/`: `summary.md`, `junit.xml` (CI) and
+`report.json`.
 
 ## Maintenance
 

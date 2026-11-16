@@ -283,6 +283,50 @@ recreated with that project mounted. Each project keeps its own Linux
 > A macOS `bun install` for editor types also works. The two copies don't
 > interfere.
 
+## Saved tests (flows)
+
+Turn a manual check into a repeatable test: a `.flow` file is a list of
+expoemu commands, one per line, without the `expoemu` prefix.
+
+```bash
+expoemu run --init      # creates .expoemu/flows/example.flow
+```
+
+`.expoemu/flows/login.flow`:
+
+```
+# Sign-in with a wrong password shows an error
+open
+wait-for "Sign in" --timeout 60
+fill "Email" "${EMAIL:-ada@example.com}"
+fill "Password" "wrong-password"
+tap-text "Sign in"
+wait-for "Invalid password"
+screenshot login-error
+```
+
+```bash
+expoemu run                                   # every flow in .expoemu/flows/
+expoemu run login.flow --var EMAIL=qa@x.com   # one flow, with a variable
+expoemu run --device tablet                   # same flows on another device
+```
+
+```
+▶ login — Sign-in with a wrong password shows an error
+  ✓ open  (4.7 s)
+  ✓ wait-for "Sign in" --timeout 60  (6.9 s)
+  …
+✓ 3/3 flow(s) passed — report: .android-screenshots/runs/2026-11-16T09-12-04
+```
+
+- **On failure:** each flow stops at its first failing step and saves a
+  screenshot and recent error logs. All flows still run, unless you pass
+  `--bail`. The exit code is 1 if any flow failed.
+- **Report:** `summary.md` for people, `junit.xml` for CI, `report.json` for
+  tools.
+- **Share them:** commit `.expoemu/flows/` so the team and AI assistants run
+  the same tests.
+
 ## Several devices at once
 
 Test on a phone, a tablet and a small screen side by side, or run two or

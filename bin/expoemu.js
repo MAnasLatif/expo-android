@@ -41,6 +41,9 @@ const SYSTEM_CMDS = [ // scripts/system.sh — device state, capture, info
 ];
 const APP_CMDS = ['app', 'crash', 'perf', 'memory']; // scripts/app.sh
 
+// Commands implemented in Node rather than a script.
+const BUILTINS = ['up', 'emulator', 'run'];
+
 const COMMANDS = {
   setup:            { script: 'setup.sh' },
   start:            { script: 'start.sh' },
@@ -131,6 +134,10 @@ APP & DEBUGGING
   logcat [--errors|--all] [-n N] [--follow] [--clear] | crash [-n N]
   perf [--reset] | memory | reload | devmenu | open-url URL | activity | size
   adb ARGS…                         raw adb against the emulator
+
+FLOWS (saved, repeatable tests)
+  run [FILE|DIR…] [--var K=V] [--bail] [--report DIR]   run .flow files (default ./.expoemu/flows)
+  run --init                                          create an example flow
 
 OTHER
   check-versions [--verify-sync]   compare pinned tool versions with upstream
@@ -254,7 +261,7 @@ function dispatch(argv) {
     console.log(pkg.version);
     return 0;
   }
-  const known = cmd === 'up' || cmd === 'emulator' || Object.hasOwn(COMMANDS, cmd);
+  const known = BUILTINS.includes(cmd) || Object.hasOwn(COMMANDS, cmd);
   if (!known) {
     console.error(`expoemu: unknown command "${cmd}". Run: ${CMD} help`);
     return 2;
@@ -266,6 +273,7 @@ function dispatch(argv) {
     return 1;
   }
   if (cmd === 'up') return up(args);
+  if (cmd === 'run') return require('./flow.js').run(args, { bin: __filename });
   if (cmd === 'emulator') {
     const [sub, ...rest] = args;
     if (sub === 'start') return runScript('emulator-start.sh', rest);
@@ -282,4 +290,4 @@ if (require.main === module) {
   process.exitCode = main(process.argv.slice(2));
 }
 
-module.exports = { COMMANDS, HELP, main, dispatch, extractDevice, commandPrefix };
+module.exports = { COMMANDS, BUILTINS, HELP, main, dispatch, extractDevice, commandPrefix };

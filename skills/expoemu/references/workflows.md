@@ -7,6 +7,7 @@ exits 0 (run `expoemu up --no-animations` first if it doesn't).
 
 - [Verify a code change](#verify-a-code-change)
 - [Test a form or login flow](#test-a-form-or-login-flow)
+- [Save a flow as a regression test](#save-a-flow-as-a-regression-test)
 - [Navigate long screens and lists](#navigate-long-screens-and-lists)
 - [Debug a red screen or crash](#debug-a-red-screen-or-crash)
 - [Start from a fresh install](#start-from-a-fresh-install)
@@ -46,6 +47,37 @@ expoemu screenshot logged-in
 
 Negative case: fill a wrong password, tap, then
 `expoemu wait-for "Invalid password"`.
+
+## Save a flow as a regression test
+
+When a flow works, save it so it can be re-run after every change
+(by you, the user, or CI):
+
+```bash
+expoemu run --init                        # creates .expoemu/flows/example.flow
+```
+
+`.expoemu/flows/login.flow`:
+
+```
+# Sign-in with a wrong password shows an error
+open
+wait-for "Sign in" --timeout 60
+fill "Email" "${EMAIL:-ada@example.com}"
+fill "Password" "wrong-password"
+tap-text "Sign in"
+wait-for "Invalid password"
+screenshot login-error
+```
+
+```bash
+expoemu run                               # every flow in .expoemu/flows/
+expoemu run .expoemu/flows/login.flow --var EMAIL=test@example.com
+```
+
+Read the printed report (`summary.md`). A failed flow has a failure
+screenshot and an error log next to it. Commit `.expoemu/flows/` so the
+team shares the tests.
 
 ## Navigate long screens and lists
 

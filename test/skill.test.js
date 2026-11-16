@@ -7,11 +7,11 @@ const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
-const { COMMANDS } = require('../bin/expoemu.js');
+const { COMMANDS, BUILTINS } = require('../bin/expoemu.js');
 
 const SKILL_DIR = path.join(__dirname, '..', 'skills', 'expoemu');
 const skillMd = fs.readFileSync(path.join(SKILL_DIR, 'SKILL.md'), 'utf8');
-const CLI = new Set([...Object.keys(COMMANDS), 'up', 'emulator', 'help']);
+const CLI = new Set([...Object.keys(COMMANDS), ...BUILTINS, 'help']);
 
 // Minimal frontmatter parser: top-level "key: value" plus one nested map.
 function frontmatter(text) {
@@ -62,7 +62,7 @@ test('SKILL.md body stays under 500 lines', () => {
 });
 
 test('references exist, are one level deep, long ones have contents', () => {
-  const links = [...skillMd.matchAll(/\]\((references\/[^)]+)\)/g)].map((m) => m[1]);
+  const links = [...new Set([...skillMd.matchAll(/\]\((references\/[^)#]+)(?:#[^)]*)?\)/g)].map((m) => m[1]))];
   assert.ok(links.length >= 3, 'SKILL.md links its references');
   for (const rel of links) {
     assert.match(rel, /^references\/[^/]+\.md$/, `${rel} must be one level deep`);
