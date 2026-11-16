@@ -4,7 +4,11 @@
 #
 #   scripts/setup.sh [--project /path/to/expo-app] [--accept-licenses]
 #                    [--runtime docker|kiri]
-#                    [--skip-sdk] [--skip-docker] [--recreate-avd]
+#                    [--skip-sdk] [--skip-docker] [--recreate-avd] [--no-global]
+#
+# --no-global     don't install the global `expoemu` command (npx keeps working).
+#                 By default, setup run through npx/bunx installs it so that
+#                 `expoemu up` works directly afterwards.
 #
 # --runtime kiri  use Kiri (https://runkiri.com) instead of Docker Desktop.
 #                 Optional; install Kiri yourself first. Saved to .env.
@@ -21,7 +25,7 @@
 source "$(dirname "$0")/lib/common.sh"
 
 # --- Arguments ---------------------------------------------------------------
-ARG_PROJECT="" ARG_RUNTIME="" ACCEPT_LICENSES="${ACCEPT_ANDROID_LICENSES:-no}" SKIP_SDK=0 SKIP_DOCKER=0 RECREATE_AVD=0
+ARG_PROJECT="" ARG_RUNTIME="" ACCEPT_LICENSES="${ACCEPT_ANDROID_LICENSES:-no}" SKIP_SDK=0 SKIP_DOCKER=0 RECREATE_AVD=0 GLOBAL=1
 while [ $# -gt 0 ]; do
   case "$1" in
     --project) ARG_PROJECT="$2"; shift 2 ;;
@@ -32,7 +36,8 @@ while [ $# -gt 0 ]; do
     --skip-sdk) SKIP_SDK=1; shift ;;
     --skip-docker) SKIP_DOCKER=1; shift ;;
     --recreate-avd) RECREATE_AVD=1; shift ;;
-    -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
+    --no-global) GLOBAL=0; shift ;;
+    -h|--help) sed -n '2,/^# =====*$/p' "$0"; exit 0 ;;
     *) die "Unknown option: $1 (see --help)" ;;
   esac
 done
@@ -167,16 +172,25 @@ if [ "$SKIP_DOCKER" = 0 ]; then
   ok "Docker image ready"
 fi
 
+# --- 7. Global `expoemu` command (only when run through the CLI) --------------
+GLOBAL_OK=0
+if [ "$GLOBAL" = 1 ] && [ -n "${EXPOEMU_CLI:-}" ] && [ ! -d "$REPO_ROOT/.git" ]; then
+  # Non-fatal: if it fails, `npx expoemu …` still works.
+  if bash "$(dirname "$0")/install-cli.sh"; then GLOBAL_OK=1; fi
+fi
+
 cat >&2 <<EOF
 
 ${C_GREEN}Setup complete.${C_RESET} Next, from your Expo project folder:
 EOF
 # Hints follow how setup was run (npx expoemu … vs scripts/….sh).
 if [ -n "${EXPOEMU_CLI:-}" ]; then
-  cat >&2 <<'EOF'
-  npx expoemu up        # boot the phone, start the container + Metro, open the app
-  npx expoemu status    # verify everything is connected
-  npx expoemu down      # stop everything when you're done
+  # After a successful global install, plain `expoemu` works everywhere.
+  c="${EXPOEMU_CMD:-npx expoemu}"; [ "$GLOBAL_OK" = 1 ] && c=expoemu
+  cat >&2 <<EOF
+  $c up        # boot the phone, start the container + Metro, open the app
+  $c status    # verify everything is connected
+  $c down      # stop everything when you're done
 EOF
 else
   cat >&2 <<'EOF'

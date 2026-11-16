@@ -5,10 +5,10 @@
 // Thin, dependency-free dispatcher: every command maps to a bash script in
 // ../scripts. Run it from your Expo project folder:
 //
-//   npx expoemu setup        one-time install (isolated SDK, AVD, Docker image)
-//   npx expoemu up           phone + container + Metro + open the app
-//   npx expoemu screenshot   …and the other agent-friendly device commands
-//   npx expoemu down         stop everything
+//   expoemu setup        one-time install (isolated SDK, AVD, Docker image)
+//   expoemu up           phone + container + Metro + open the app
+//   expoemu screenshot   …and the other agent-friendly device commands
+//   expoemu down         stop everything
 //
 // The scripts do the real work; this file only routes arguments and exit codes.
 // =============================================================================
@@ -53,6 +53,9 @@ const COMMANDS = {
   'check-versions': { script: 'check-versions.sh' },
   down:             { script: 'stop.sh', prefix: ['--all'] },
   devices:          { script: 'devices.sh', prefix: ['list'] },
+  install:          { script: 'install-cli.sh' },                 // global `expoemu` command
+  update:           { script: 'install-cli.sh', prefix: ['--latest'] },
+  uninstall:        { script: 'install-cli.sh', prefix: ['--remove'] },
   device:           { script: 'devices.sh' },   // device create|delete|profiles|list
 };
 for (const c of DEVICE_CMDS) COMMANDS[c] = { script: 'device.sh', prefix: [c] };
@@ -66,7 +69,9 @@ Docker. Run commands from your Expo project folder.
 "Text" selectors match visible text, accessibilityLabel, testID or placeholder.
 
 SETUP & LIFECYCLE
-  setup [--runtime docker|kiri] [--accept-licenses]   one-time install
+  setup [--runtime docker|kiri] [--accept-licenses]   one-time install (also installs the
+                                                      global \`expoemu\` command; --no-global skips)
+  install | update | uninstall                        the global \`expoemu\` command only
   up [--headless] [--no-animations] [--cold-boot]     phone + container + Metro + open app
   down                                                stop container, all emulators, adb
   status | doctor                                     health check (exit 1 if broken)
@@ -129,6 +134,20 @@ OTHER
 Docs: docs/AGENTS.md in the package (or the project README).`;
 
 // --- Helpers ---------------------------------------------------------------------
+// How the user ran us, so hints show the same form:
+//   npx cache (…/_npx/…) or the project's node_modules → "npx expoemu"
+//   anything else (global install, linked checkout)    → "expoemu"
+function commandPrefix(binPath = process.argv[1] || '', cwd = process.cwd()) {
+  let real = binPath;
+  try { real = fs.realpathSync(binPath); } catch { /* keep as is */ }
+  const local = path.join(cwd, 'node_modules') + path.sep;
+  if (real.includes(`${path.sep}_npx${path.sep}`) || real.startsWith(local) || binPath.startsWith(local)) {
+    return 'npx expoemu';
+  }
+  return 'expoemu';
+}
+const CMD = commandPrefix();
+
 function runScript(script, args, extraEnv = {}) {
   const file = path.join(SCRIPTS, script);
   // Invoke through bash so executable bits don't matter after npm install.
@@ -136,7 +155,7 @@ function runScript(script, args, extraEnv = {}) {
   const r = spawnSync('bash', [file, ...args], {
     stdio: 'inherit',
     cwd: process.cwd(),
-    env: { ...process.env, EXPOEMU_CLI: '1', ...extraEnv },
+    env: { ...process.env, EXPOEMU_CLI: '1', EXPOEMU_CMD: CMD, ...extraEnv },
   });
   if (r.error) {
     console.error(`expoemu: failed to run bash: ${r.error.message}`);
@@ -164,7 +183,7 @@ function up(args) {
     const code = runScript(script, a, { EXPOEMU_QUIET_HINTS: '1' });
     if (code !== 0) return code;
   }
-  console.error('\nexpoemu: ready. Try: npx expoemu screenshot  |  npx expoemu ui  |  npx expoemu status');
+  console.error(`\nexpoemu: ready. Try: ${CMD} screenshot  |  ${CMD} ui  |  ${CMD} status`);
   return 0;
 }
 
@@ -210,7 +229,7 @@ function main(argv) {
   }
   const known = cmd === 'up' || cmd === 'emulator' || Object.hasOwn(COMMANDS, cmd);
   if (!known) {
-    console.error(`expoemu: unknown command "${cmd}". Run: npx expoemu help`);
+    console.error(`expoemu: unknown command "${cmd}". Run: ${CMD} help`);
     return 2;
   }
   // Checked at runtime, not via package.json "os": a project may list expoemu as a
@@ -236,4 +255,4 @@ if (require.main === module) {
   process.exitCode = main(process.argv.slice(2));
 }
 
-module.exports = { COMMANDS, HELP, main, extractDevice };
+module.exports = { COMMANDS, HELP, main, extractDevice, commandPrefix };

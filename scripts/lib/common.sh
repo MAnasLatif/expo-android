@@ -68,7 +68,8 @@ warn() { printf '%s !%s %s\n' "$C_YELLOW" "$C_RESET" "$*" >&2; }
 die()  { printf '%s ✗%s %s\n' "$C_RED" "$C_RESET" "$*" >&2; exit 1; }
 
 # --- Command hints -------------------------------------------------------------
-# Show commands the way the user runs them: `npx expoemu open` when called through
+# Show commands the way the user runs them: `expoemu open` / `npx expoemu open`
+# (EXPOEMU_CMD, set by bin/expoemu.js) when called through
 # the expoemu CLI (bin/expoemu.js sets EXPOEMU_CLI=1), `scripts/open-app.sh` otherwise.
 cmd() {
   local script="$1" sub
@@ -83,7 +84,7 @@ cmd() {
     emulator-stop.sh) sub="emulator stop" ;;
     *) sub="${script%.sh}" ;;
   esac
-  if [ -n "${EXPOEMU_CLI:-}" ]; then printf 'npx expoemu %s' "$sub"; else printf 'scripts/%s' "$script"; fi
+  if [ -n "${EXPOEMU_CLI:-}" ]; then printf '%s %s' "${EXPOEMU_CMD:-npx expoemu}" "$sub"; else printf 'scripts/%s' "$script"; fi
 }
 
 # --- Config loading ----------------------------------------------------------

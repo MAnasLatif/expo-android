@@ -80,6 +80,14 @@ test('--device is extracted anywhere, but not from passthrough commands', () => 
   assert.deepStrictEqual(extractDevice(['status']), { device: null, rest: ['status'] });
 });
 
+test('hints use the same form the user ran: npx vs global command', () => {
+  const { commandPrefix } = require('../bin/expoemu.js');
+  assert.strictEqual(commandPrefix('/Users/a/.npm/_npx/123abc/node_modules/expoemu/bin/expoemu.js', '/w'), 'npx expoemu');
+  assert.strictEqual(commandPrefix('/w/node_modules/expoemu/bin/expoemu.js', '/w'), 'npx expoemu');      // devDependency
+  assert.strictEqual(commandPrefix('/Users/a/.nvm/versions/node/v24/lib/node_modules/expoemu/bin/expoemu.js', '/w'), 'expoemu');
+  assert.strictEqual(commandPrefix('/opt/homebrew/lib/node_modules/expoemu/bin/expoemu.js', '/w'), 'expoemu');
+});
+
 test('package "files" ships everything the scripts need at runtime', () => {
   for (const f of ['bin/', 'scripts/', 'docker/', 'config/', 'Dockerfile', 'docker-compose.yml', '.env.example']) {
     assert.ok(pkg.files.includes(f), `package.json files is missing ${f}`);
