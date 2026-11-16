@@ -1,11 +1,31 @@
 # Troubleshooting
 
-Start with `npx expoemu status` (or `scripts/status.sh` in a git clone). It
+Start with `expoemu status` (or `scripts/status.sh` in a git clone). It
 checks every link in the chain and prints a hint for each failure.
 
-> Script names below map to `npx expoemu` commands: `scripts/emulator-start.sh`
-> → `npx expoemu emulator start`, `scripts/open-app.sh` → `npx expoemu open`,
-> `scripts/device.sh logcat` → `npx expoemu logcat`, and so on.
+> Script names below map to `expoemu` commands: `scripts/emulator-start.sh`
+> → `expoemu emulator start`, `scripts/open-app.sh` → `expoemu open`,
+> `scripts/device.sh logcat` → `expoemu logcat`, and so on.
+
+## The `expoemu` command
+
+**`expoemu: command not found`.**
+The global command isn't installed, or isn't on your PATH:
+
+- Install it: `npx expoemu install` (setup normally does this).
+- **Using nvm/fnm?** Global npm commands belong to one Node version. After
+  switching versions, run `npx expoemu install` again.
+- **Installed but still not found?** `npx expoemu install` prints a warning if
+  npm's global `bin` folder isn't on your PATH, together with the line to add
+  to `~/.zshrc`. Open a new terminal afterwards.
+- **`EACCES` / permission denied:** npm's global folder belongs to root.
+  Don't use sudo. Switch to a Node version manager (nvm, fnm, volta), or run
+  `npm config set prefix ~/.npm-global` and add `~/.npm-global/bin` to your
+  PATH.
+
+Until then, every command also works as `npx expoemu …`.
+
+**Old version after a release:** `expoemu update`.
 
 ## Emulator
 
@@ -25,18 +45,18 @@ Hypervisor.framework is built in. If you're inside a VM (e.g. a CI Mac VM),
 nested virtualization may be unavailable.
 
 **Screen is locked / taps do nothing.**
-Run `npx expoemu unlock`.
+Run `expoemu unlock`.
 
 **A "Try out your stylus" screen appears when typing.**
 The emulator's virtual touchscreen reports stylus support, so Gboard shows
 its handwriting tutorial. `emulator start` turns this off. If you started the
 emulator another way, run
-`npx expoemu adb shell settings put secure stylus_handwriting_enabled 0`.
+`expoemu adb shell settings put secure stylus_handwriting_enabled 0`.
 
 **"This is the developer menu" covers the app.**
 That's Expo Go's one-time introduction after it's installed or its data is
 cleared. `open` and `app clear` dismiss it automatically. You can also run
-`npx expoemu tap-text Continue` and then `npx expoemu tap-text Close`.
+`expoemu tap-text Continue` and then `expoemu tap-text Close`.
 
 **`rotate landscape` does nothing.**
 The app is locked to one orientation. The Expo template sets
@@ -46,7 +66,7 @@ rotation. The home screen launcher also never rotates.
 **`scroll` types random words into a text field.**
 That happened when the swipe crossed the on-screen keyboard (glide typing).
 `scroll`, `tap-text` and `fill` now hide the keyboard first. For raw
-`swipe`, run `npx expoemu hide-keyboard` before it.
+`swipe`, run `expoemu hide-keyboard` before it.
 
 ## adb
 

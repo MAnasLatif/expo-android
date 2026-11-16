@@ -8,6 +8,13 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- `npx expoemu setup` is the only `npx` you ever type. Setup also installs the
+  global `expoemu` command (npm, or Bun via `bunx`; never sudo; skip with
+  `--no-global`), so afterwards it's just `expoemu up`, `expoemu screenshot`
+  and so on. New `install`, `update` and `uninstall` commands manage it.
+  Hints print the same form you used (`expoemu …` or `npx expoemu …`), and
+  all docs and the Agent Skill now use `expoemu …`.
+
 - Agent Skill `expoemu` (`skills/expoemu`) for Claude Code, Cursor, Codex,
   Copilot and other agents. Install with `npx skills add MAnasLatif/expoemu`.
   It includes SKILL.md (workflow, selectors, gotchas), references (all

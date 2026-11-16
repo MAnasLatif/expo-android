@@ -71,12 +71,24 @@ test('references exist, are one level deep, long ones have contents', () => {
   }
 });
 
-test('every `npx expoemu <cmd>` in the skill is a real CLI command', () => {
+// Code in markdown: inline `spans` and lines of ``` fenced blocks.
+function codeSnippets(md) {
+  const out = [...md.matchAll(/`([^`\n]+)`/g)].map((m) => m[1]);
+  for (const block of md.matchAll(/```[^\n]*\n([\s\S]*?)```/g)) out.push(...block[1].split('\n'));
+  return out;
+}
+
+test('every `expoemu <cmd>` / `npx expoemu <cmd>` in the skill is a real CLI command', () => {
+  let checked = 0;
   for (const text of skillTexts) {
-    for (const m of text.matchAll(/npx (?:-y )?expoemu (?:--device \S+ )?([a-z][a-z-]*)/g)) {
-      assert.ok(CLI.has(m[1]), `unknown command in skill: ${m[1]}`);
+    for (const snippet of codeSnippets(text)) {
+      for (const m of snippet.matchAll(/(?:^|&&\s*|;\s*)\s*(?:npx (?:-y )?)?expoemu (?:--device \S+ )?([a-z][a-z-]*)/g)) {
+        assert.ok(CLI.has(m[1]), `unknown command in skill: "${snippet.trim()}"`);
+        checked++;
+      }
     }
   }
+  assert.ok(checked > 50, `expected many command examples, found ${checked}`);
 });
 
 test('every CLI command is documented in references/commands.md', () => {

@@ -6,8 +6,8 @@
       "id": 1,
       "prompt": "Run my app on Android and show me what the home screen looks like.",
       "expected_behavior": [
-        "Runs `npx expoemu status` first and `npx expoemu up` only if something is down",
-        "Takes `npx expoemu screenshot` and reads the printed PNG path",
+        "Runs `expoemu status` first and `expoemu up` only if something is down",
+        "Takes `expoemu screenshot` and reads the printed PNG path",
         "Describes the screen from the screenshot, not from guesses"
       ]
     },
@@ -15,8 +15,8 @@
       "id": 2,
       "prompt": "I changed the login button text to 'Continue with email'. Check it shows up on Android.",
       "expected_behavior": [
-        "Uses `npx expoemu wait-for \"Continue with email\"` (or assert-text) instead of assuming",
-        "If not found, checks `npx expoemu expo --logs` / `logcat --errors` or reopens with `npx expoemu open`",
+        "Uses `expoemu wait-for \"Continue with email\"` (or assert-text) instead of assuming",
+        "If not found, checks `expoemu expo --logs` / `logcat --errors` or reopens with `expoemu open`",
         "Reports pass/fail with evidence (screenshot or command output)"
       ]
     },
@@ -33,7 +33,7 @@
       "id": 4,
       "prompt": "The app shows a red error screen after my last change. Find out why.",
       "expected_behavior": [
-        "Collects `npx expoemu logcat` (ReactNativeJS stack) and/or `npx expoemu expo --logs`",
+        "Collects `expoemu logcat` (ReactNativeJS stack) and/or `expoemu expo --logs`",
         "Points to the failing file/line from the stack and proposes or applies a fix",
         "Verifies the fix with `reload`/`open` plus `wait-for` or a screenshot"
       ]
@@ -42,8 +42,8 @@
       "id": 5,
       "prompt": "What does my app do when the phone is offline?",
       "expected_behavior": [
-        "Uses `npx expoemu network off`, exercises the app, captures what is shown",
-        "Restores with `npx expoemu network on` afterwards",
+        "Uses `expoemu network off`, exercises the app, captures what is shown",
+        "Restores with `expoemu network on` afterwards",
         "Does not stop Metro or the emulator to simulate offline"
       ]
     },
@@ -51,7 +51,7 @@
       "id": 6,
       "prompt": "Check that the settings screen looks right on a tablet and on a phone.",
       "expected_behavior": [
-        "Creates a tablet device if `npx expoemu devices` lists none (`device create … --profile tablet`)",
+        "Creates a tablet device if `expoemu devices` lists none (`device create … --profile tablet`)",
         "Starts it with `emulator start --device …`, opens the app on both (`open --all`)",
         "Navigates on each device with `--device` and compares `screenshot --all` output"
       ]
@@ -60,7 +60,7 @@
       "id": 7,
       "prompt": "Add the zod package to my project.",
       "expected_behavior": [
-        "Installs it with the project's own package manager on the host as usual, and in the container via `npx expoemu shell <pm> install zod` so the running app sees it",
+        "Installs it with the project's own package manager on the host as usual, and in the container via `expoemu shell <pm> install zod` so the running app sees it",
         "Does not use a global adb or install Android tools on the Mac"
       ]
     },
@@ -68,7 +68,7 @@
       "id": 8,
       "prompt": "Clean everything up, I'm done for today.",
       "expected_behavior": [
-        "Runs `npx expoemu down` (keeps image, caches and devices)",
+        "Runs `expoemu down` (keeps image, caches and devices)",
         "Does NOT run `cleanup` or delete devices without asking"
       ]
     }

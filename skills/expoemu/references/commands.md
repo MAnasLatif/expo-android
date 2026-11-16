@@ -1,6 +1,8 @@
 # expoemu command reference
 
-Every command is `npx expoemu <command> [args]`, run from the Expo project root.
+Every command is `expoemu <command> [args]`, run from the Expo project root.
+After `setup` (or `expoemu install`) the global command exists, so `expoemu <command>`
+works the same without `npx`.
 Exit code `0` = success, `1` = failure (reason on stderr), `2` = usage error.
 Add `--device NAME` (or `-d NAME`) to any command to target one device; for
 `adb`, `shell` and `expo` put it before the command.
@@ -22,7 +24,10 @@ Add `--device NAME` (or `-d NAME`) to any command to target one device; for
 
 | Command | What it does |
 |---------|--------------|
-| `setup [--accept-licenses] [--runtime docker\|kiri] [--recreate-avd] [--skip-sdk] [--skip-docker]` | One-time install: isolated Android SDK + Pixel phone in `~/.expoemu`, Docker image. Idempotent. `--accept-licenses` accepts the Android SDK license (ask the user first). |
+| `setup [--accept-licenses] [--runtime docker\|kiri] [--recreate-avd] [--skip-sdk] [--skip-docker] [--no-global]` | One-time install: isolated Android SDK + Pixel phone in `~/.expoemu`, Docker image, and the global `expoemu` command (unless `--no-global`). Idempotent. `--accept-licenses` accepts the Android SDK license (ask the user first). |
+| `install` | Install only the global `expoemu` command (npm, or Bun when run via `bunx`). Never uses sudo. |
+| `update` | Upgrade the global command to the latest release. |
+| `uninstall` | Remove the global command (SDK, devices and settings are kept). |
 | `up [--no-animations] [--headless] [--cold-boot]` | Boot the phone, start the container (installs deps on first use), start Metro, open the app in Expo Go. Honors `--device`. |
 | `down` | Stop the container, every emulator and the adb server. Image, caches and devices are kept. |
 | `status` (alias `doctor`) | Health check of SDK, devices, adb, container, Metro. Exit `1` if something required is down. |

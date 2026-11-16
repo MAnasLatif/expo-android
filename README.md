@@ -5,11 +5,12 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Run and test **Expo / React Native apps on a real Android emulator on your
-Mac** with one npm command, and no Android Studio, Java or system-wide Android
+Mac** with one command, and no Android Studio, Java or system-wide Android
 SDK. **Expo Emulator** (`expoemu`) — Expo + Android **emu**lator.
 
 ```bash
-npx expoemu up    # phone boots, Metro starts, your app opens
+npx expoemu setup   # once per Mac: installs everything, including the `expoemu` command
+expoemu up          # then, in any Expo project: phone boots, Metro starts, your app opens
 ```
 
 - 🐳 **Toolchain in Docker:** JDK 17, Node.js, Bun, Expo CLI, Metro, adb
@@ -34,7 +35,7 @@ npx expoemu up    # phone boots, Metro starts, your app opens
 ## Requirements
 
 - macOS 13+ on **Intel or Apple Silicon**
-- Node.js 18+ (for `npx`) or Bun (`bunx expoemu …` works too)
+- Node.js 18+ or Bun (only to install; `bunx expoemu setup` works too)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/), or
   optionally [Kiri](https://runkiri.com) (see [Using Kiri](#optional-using-kiri-instead-of-docker-desktop))
 - About 14 GB free disk space (SDK and system image ~6 GB, phone data and
@@ -43,29 +44,39 @@ npx expoemu up    # phone boots, Metro starts, your app opens
 
 ## Quick start
 
-**Set up once** (from any folder):
+**1. Set up once** (from any folder). This is the only time you type `npx`:
 
 ```bash
 npx expoemu setup     # isolated Android SDK + Pixel phone + Docker image (~10 min, once per Mac)
 ```
 
-**Then, in any Expo project:**
+Setup also installs the **`expoemu` command** globally (npm, or Bun if you
+ran `bunx expoemu setup`; never sudo). From then on just type `expoemu`.
+
+**2. Then, in any Expo project:**
 
 ```bash
 cd ~/code/my-expo-app
-npx expoemu up        # phone + container + Metro + opens the app (~30 s)
+expoemu up        # phone + container + Metro + opens the app (~30 s)
 # … edit code, Fast Refresh updates the phone …
-npx expoemu down      # stop everything
+expoemu down      # stop everything
 ```
 
-Switch projects by running `npx expoemu up` in another project folder. Nothing
+Switch projects by running `expoemu up` in another project folder. Nothing
 is reinstalled.
 
-**Optional:**
-- Install globally (`npm i -g expoemu`) to drop the `npx`: `expoemu up`,
-  `expoemu screenshot`…
-- For teams, pin the version in the project (`npm i -D expoemu`), so everyone
-  and every AI assistant runs the same version and `npx` never prompts.
+**Keeping the command up to date:**
+
+| Command | What it does |
+|---------|--------------|
+| `expoemu update` | Upgrade to the latest release |
+| `expoemu --version` | Show the installed version |
+| `npx expoemu install` | (Re)install the `expoemu` command, e.g. after switching Node versions with nvm |
+| `expoemu uninstall` | Remove the command (your SDK, devices and settings stay) |
+
+Prefer not to install anything globally? Run `npx expoemu setup --no-global`,
+then prefix every command with `npx`, as in `npx expoemu up`. Teams can also
+pin a version per project with `npm i -D expoemu` and run `npx expoemu …`.
 
 ### Install once, test every project
 
@@ -74,7 +85,7 @@ managed places:
 
 | What | Where | In your project? |
 |------|-------|------------------|
-| The `expoemu` code | npm's cache (`~/.npm/_npx/…`) or the global npm folder | No |
+| The `expoemu` command | npm's global folder (e.g. `~/.nvm/…/bin/expoemu`) | No |
 | Android SDK, emulator, the Pixel phone, logs, settings | `~/.expoemu/` | No |
 | Toolchain (JDK, Node, Bun, Expo CLI, Metro) | Docker image `expoemu:local` | No |
 | Linux `node_modules`, Bun/Expo/Gradle caches | Docker volumes `expoemu_*` | No |
@@ -83,22 +94,22 @@ managed places:
 Dependencies are installed with **your project's own package manager**
 (npm, yarn, pnpm or bun, picked from your lockfile) in a mode that never
 rewrites your files. No lockfile or config is added to your project. Remove
-everything with `npx expoemu cleanup --all`.
+everything with `expoemu cleanup --all`.
 
 ## Commands
 
 | Command | What it does |
 |---------|--------------|
-| `npx expoemu setup` | One-time install (idempotent). `--runtime docker\|kiri`, `--accept-licenses`, `--recreate-avd` |
-| `npx expoemu up` | Boot the phone, start the container and Metro, open the app. `--no-animations`, `--headless`, `--cold-boot` |
-| `npx expoemu down` | Stop the container, emulator and adb server (image and caches kept) |
-| `npx expoemu status` | Health check of SDK, emulator, adb, container and Metro (exit 1 if broken) |
-| `npx expoemu emulator start\|stop` | Only the phone |
-| `npx expoemu start` / `stop` | Only the container (runs `bun install` on first use) |
-| `npx expoemu expo [--background\|--logs\|--stop]` | Metro (interactive by default) |
-| `npx expoemu open [--reinstall]` | Install the matching Expo Go if needed and open the app |
-| `npx expoemu shell [cmd…]` | Shell or command in the container, e.g. `npx expoemu shell npm install zod` (use your project's package manager) |
-| `npx expoemu cleanup …` | Scoped removal: `--project`, `--caches`, `--image`, `--sdk`, `--all` |
+| `expoemu setup` | One-time install (idempotent). `--runtime docker\|kiri`, `--accept-licenses`, `--recreate-avd` |
+| `expoemu up` | Boot the phone, start the container and Metro, open the app. `--no-animations`, `--headless`, `--cold-boot` |
+| `expoemu down` | Stop the container, emulator and adb server (image and caches kept) |
+| `expoemu status` | Health check of SDK, emulator, adb, container and Metro (exit 1 if broken) |
+| `expoemu emulator start\|stop` | Only the phone |
+| `expoemu start` / `stop` | Only the container (runs `bun install` on first use) |
+| `expoemu expo [--background\|--logs\|--stop]` | Metro (interactive by default) |
+| `expoemu open [--reinstall]` | Install the matching Expo Go if needed and open the app |
+| `expoemu shell [cmd…]` | Shell or command in the container, e.g. `expoemu shell npm install zod` (use your project's package manager) |
+| `expoemu cleanup …` | Scoped removal: `--project`, `--caches`, `--image`, `--sdk`, `--all` |
 
 ### Device actions
 
@@ -166,9 +177,9 @@ wins over a partial one.
 | `perf [--reset]` · `memory` | Jank %, frame-time percentiles, memory use |
 | `reload` · `devmenu` · `open-url URL` · `activity` · `size` · `adb …` | Misc |
 
-Prefix every command with `npx expoemu`, e.g. `npx expoemu scroll-to "Row 30"`.
+Prefix every command with `expoemu`, e.g. `expoemu scroll-to "Row 30"`.
 App commands target Expo Go unless you set `APP_PACKAGE`. Run
-`npx expoemu help` for the full list.
+`expoemu help` for the full list.
 
 ## AI assistant skill: let your agent test the app
 
@@ -208,7 +219,7 @@ before saying a task is done.
 - "Check the settings screen on a phone and a tablet."
 - "What happens when the user is offline?"
 
-The agent picks the right commands, such as `npx expoemu up`, `screenshot`,
+The agent picks the right commands, such as `expoemu up`, `screenshot`,
 `fill`, `tap-text`, `wait-for` and `logcat`, and reads the screenshots it
 takes. Setup (`npx expoemu setup`) still needs one approval from you, because
 it accepts the Android SDK license and downloads about 8 GB.
@@ -231,7 +242,7 @@ that it stays in sync with the CLI's commands.
 </details>
 
 Without the skill, any agent can still use expoemu. Every action is a plain
-`npx expoemu …` command. See [docs/AGENTS.md](docs/AGENTS.md).
+`expoemu …` command. See [docs/AGENTS.md](docs/AGENTS.md).
 
 ## Configuration
 
@@ -254,12 +265,12 @@ changed.
 
 ## Working with several projects
 
-Run `npx expoemu up` from another project's folder and the container is
+Run `expoemu up` from another project's folder and the container is
 recreated with that project mounted. Each project keeps its own Linux
 `node_modules` volume. Bun, Expo and Gradle caches are shared.
 
 > **Note:** The container's `node_modules` is a Docker volume that hides your
-> macOS `node_modules`. Add packages with your package manager inside the container, e.g. `npx expoemu shell npm install <pkg>`.
+> macOS `node_modules`. Add packages with your package manager inside the container, e.g. `expoemu shell npm install <pkg>`.
 > A macOS `bun install` for editor types also works. The two copies don't
 > interfere.
 
@@ -271,19 +282,19 @@ driver/rider). All devices share one system image, so each extra device only
 adds its own data (~2 GB) and uses its RAM while running.
 
 ```bash
-npx expoemu device create tablet --profile tablet
-npx expoemu device create small  --profile small
-npx expoemu devices                          # list devices + which are running
+expoemu device create tablet --profile tablet
+expoemu device create small  --profile small
+expoemu devices                          # list devices + which are running
 
-npx expoemu up                               # default phone, container, Metro, app
-npx expoemu emulator start --device tablet   # boots next to the phone
-npx expoemu emulator start --device small
-npx expoemu open --all                       # open the app on every running device
+expoemu up                               # default phone, container, Metro, app
+expoemu emulator start --device tablet   # boots next to the phone
+expoemu emulator start --device small
+expoemu open --all                       # open the app on every running device
 
-npx expoemu fill "Email" "a@x.com" --device tablet   # any command, one device
-npx expoemu tap-text "Send" --device small
-npx expoemu screenshot --all                 # one PNG per device
-npx expoemu emulator stop --device small     # stop one; `down` stops all
+expoemu fill "Email" "a@x.com" --device tablet   # any command, one device
+expoemu tap-text "Send" --device small
+expoemu screenshot --all                 # one PNG per device
+expoemu emulator stop --device small     # stop one; `down` stops all
 ```
 
 | Profile | Hardware | Screen | RAM |
@@ -297,7 +308,7 @@ npx expoemu emulator stop --device small     # stop one; `down` stops all
 - **Choosing the device:** without `--device`, commands use the default phone
   (also called `default`). `--device` takes a device name or a serial such as
   `emulator-5556`. For `adb`, `shell` and `expo`, put `--device` before the
-  command (`npx expoemu --device tablet adb …`), so their own flags pass
+  command (`expoemu --device tablet adb …`), so their own flags pass
   through.
 - **Shared Metro:** one Metro serves every device. Each device runs its own
   copy of the app with its own state.
@@ -313,8 +324,8 @@ default, and expoemu never installs Kiri or changes your Docker settings.
 1. Install Kiri yourself by following [its docs](https://docs.runkiri.com/install/).
    It needs macOS 14 or newer. On Apple Silicon it also needs Apple Rosetta
    (`softwareupdate --install-rosetta`), because the image is `linux/amd64`.
-2. Switch expoemu to Kiri: `npx expoemu setup --runtime kiri --skip-sdk`
-3. Use everything as usual. `npx expoemu status` shows `Container runtime: Kiri`.
+2. Switch expoemu to Kiri: `expoemu setup --runtime kiri --skip-sdk`
+3. Use everything as usual. `expoemu status` shows `Container runtime: Kiri`.
 
 The scripts set `DOCKER_HOST=unix://~/.kiri/run/docker.sock` for their own
 process only. Your global `docker context` stays as it is. Images and volumes
@@ -329,10 +340,10 @@ are separate per runtime.
 ## Cleanup and uninstall
 
 ```bash
-npx expoemu cleanup --project     # this project's node_modules volume
-npx expoemu cleanup --caches      # all volumes created by expoemu
-npx expoemu cleanup --all         # full uninstall: container, volumes, image, ~/.expoemu
-npx expoemu cleanup --legacy      # upgraded from 0.1.0? remove its old Docker image/volumes
+expoemu cleanup --project     # this project's node_modules volume
+expoemu cleanup --caches      # all volumes created by expoemu
+expoemu cleanup --all         # full uninstall: container, volumes, image, ~/.expoemu
+expoemu cleanup --legacy      # upgraded from 0.1.0? remove its old Docker image/volumes
 ```
 
 Cleanup shows what it will remove and asks first. It only touches resources
@@ -347,7 +358,7 @@ git clone https://github.com/MAnasLatif/expoemu.git && cd expoemu
 scripts/setup.sh --project ~/code/my-expo-app
 ```
 
-Every `npx expoemu <cmd>` has a script in [scripts/](scripts/), e.g.
+Every `expoemu <cmd>` has a script in [scripts/](scripts/), e.g.
 `scripts/emulator-start.sh`, `scripts/device.sh tap-text "Sign in"`. You can
 also run `node bin/expoemu.js <cmd>`.
 

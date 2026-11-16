@@ -106,7 +106,7 @@ git tag v0.2.0-beta.1 && git push origin v0.2.0-beta.1 # → expoemu@0.2.0-beta.
 
 | Tag | npm version | npm dist-tag | Users get it with |
 |-----|-------------|--------------|-------------------|
-| `v1.2.3` | `1.2.3` | `latest` | `npx expoemu …` |
+| `v1.2.3` | `1.2.3` | `latest` | `expoemu …` |
 | `v1.3.0-beta.1` | `1.3.0-beta.1` | `beta` | `npx expoemu@beta …` |
 | `v1.3.0-rc.1` / `-alpha.1` / `-next.1` | same | `rc` / `alpha` / `next` | `npx expoemu@rc …` |
 
