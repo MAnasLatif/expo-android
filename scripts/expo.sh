@@ -26,10 +26,13 @@ metro_ready() {
 }
 
 # Keep the device -> Metro tunnel up (idempotent; harmless if no emulator).
+# One Metro serves every running device: reverse the port into each of them.
 reverse_port() {
-  if [ -x "$ADB" ] && [ -n "$(emulator_serial)" ]; then
-    adb_host -s "$(emulator_serial)" reverse "tcp:$METRO_PORT" "tcp:$METRO_PORT" >/dev/null 2>&1 || true
-  fi
+  [ -x "$ADB" ] || return 0
+  local s
+  for s in $(running_emulators | awk '{print $1}'); do
+    adb_host -s "$s" reverse "tcp:$METRO_PORT" "tcp:$METRO_PORT" >/dev/null 2>&1 || true
+  done
 }
 
 case "${1:-}" in

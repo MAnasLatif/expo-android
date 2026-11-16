@@ -24,31 +24,30 @@ fi
 [ -f "$AVD_HOME/$AVD_NAME.avd/config.ini" ] && pass "AVD: $AVD_NAME" || fail "AVD '$AVD_NAME' missing — run $(cmd setup.sh)"
 
 # --- Emulator + adb server -------------------------------------------------------
-serial=""
+emus=""
 if [ -x "$ADB" ]; then
   if lsof -nP -iTCP:"$ADB_SERVER_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
     pass "adb server listening on 127.0.0.1:$ADB_SERVER_PORT"
-    serial="$(emulator_serial)"
+    emus="$(running_emulators)"
   else
     fail "adb server not running — $(cmd emulator-start.sh) starts it"
   fi
 fi
-if [ -n "$serial" ]; then
+# One block per running device (several can run at once).
+while read -r serial name; do
+  [ -n "$serial" ] || continue
   api="$(adb_host -s "$serial" shell getprop ro.build.version.sdk 2>/dev/null | tr -d '\r')"
   booted="$(adb_host -s "$serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
-  [ "$booted" = 1 ] && pass "Emulator: $serial (API $api, booted)" || fail "Emulator $serial still booting"
-  if adb_host -s "$serial" reverse --list 2>/dev/null | grep -q "tcp:$METRO_PORT"; then
-    pass "adb reverse tcp:$METRO_PORT active"
-  else
-    note "adb reverse for Metro not set ($(cmd expo.sh) or $(cmd open-app.sh) set it)"
-  fi
-  if adb_host -s "$serial" shell pm list packages host.exp.exponent 2>/dev/null | grep -q exponent; then
-    pass "Expo Go installed"
-  else
-    note "Expo Go not installed yet ($(cmd open-app.sh) installs it)"
-  fi
-else
-  [ -x "$ADB" ] && fail "No emulator running — $(cmd emulator-start.sh)"
+  if [ "$booted" = 1 ]; then pass "Device '$name': $serial (API $api, booted)"; else fail "Device '$name' ($serial) still booting"; fi
+  rev="$(adb_host -s "$serial" reverse --list 2>/dev/null || true)"
+  if [[ "$rev" == *"tcp:$METRO_PORT"* ]]; then pass "  adb reverse tcp:$METRO_PORT active"
+  else note "  adb reverse for Metro not set ($(cmd expo.sh) or $(cmd open-app.sh) set it)"; fi
+  pkgs="$(adb_host -s "$serial" shell pm list packages host.exp.exponent 2>/dev/null || true)"
+  if [[ "$pkgs" == *exponent* ]]; then pass "  Expo Go installed"
+  else note "  Expo Go not installed yet ($(cmd open-app.sh) installs it)"; fi
+done <<<"$emus"
+if [ -x "$ADB" ] && [ -z "$emus" ] && lsof -nP -iTCP:"$ADB_SERVER_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
+  fail "No emulator running — $(cmd emulator-start.sh)"
 fi
 
 # --- Container runtime (Docker Desktop or Kiri) -----------------------------------
