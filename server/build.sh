@@ -3,7 +3,7 @@
 # Build the expoemu UI server APK -> server/dist/expoemu-server.apk
 #
 # No Gradle: aapt2 -> javac -> d8 -> zipalign -> apksigner, with the versions
-# pinned in config/versions.env. Needs a JDK 17 and an Android SDK with
+# pinned in server/versions.env. Needs a JDK 17 and an Android SDK with
 # sdkmanager (ANDROID_HOME). Without them it builds inside the expoemu
 # Docker image (`expoemu:local`, made by `expoemu start`), keeping the
 # build SDK in ~/.expoemu/server-sdk.
@@ -16,7 +16,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(dirname "$HERE")"
 # shellcheck source=/dev/null
-source "$ROOT/config/versions.env"
+source "$HERE/versions.env"
 
 sdkmanager_bin() {
   local d
