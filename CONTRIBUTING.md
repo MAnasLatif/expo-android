@@ -40,6 +40,27 @@ All versions live in **`config/versions.env`**.
    below.
 5. Add a line to `CHANGELOG.md` under **Unreleased**.
 
+## UI server (server/)
+
+The on-device helper behind fast UI commands is plain Java, built without
+Gradle:
+
+```bash
+server/build.sh        # -> server/dist/expoemu-server.apk + version.txt
+```
+
+It uses your `ANDROID_HOME` + JDK 17 when you have them. Otherwise it builds
+inside the `expoemu:local` image and keeps the build SDK in
+`~/.expoemu/server-sdk`. Pins are in `server/versions.env`. After changing
+`Server.java`, rebuild and check the output is still identical to
+uiautomator. The emulator must show the same screen both times:
+
+```bash
+scripts/device.sh ui --xml                    # through the server
+EXPOEMU_UI_SERVER=0 scripts/device.sh ui --xml  # through uiautomator
+diff <first file> <second file>               # must print nothing
+```
+
 ## Manual test plan (before opening a PR)
 
 ```bash
@@ -49,7 +70,8 @@ scripts/expo.sh --background
 scripts/open-app.sh
 scripts/status.sh            # must exit 0
 scripts/screenshot.sh test   # PNG shows the app
-scripts/device.sh ui         # lists elements
+scripts/device.sh ui         # lists elements (fast: UI server)
+scripts/device.sh ui-server status   # "running"
 scripts/stop.sh --all
 ```
 

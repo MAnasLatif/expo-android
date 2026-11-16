@@ -108,6 +108,24 @@ Reinstall the Linux node_modules with
 `scripts/open-app.sh --reinstall` downloads the Expo Go build for the
 project's `expo` version.
 
+## UI commands
+
+**`ui`, `tap-text`, `wait-for` take ~3 s each.** The UI server isn't used.
+`expoemu ui-server status` says why: turned off with `EXPOEMU_UI_SERVER=0`,
+a physical phone (opt in with `EXPOEMU_UI_SERVER=1`), or a git clone without
+the APK (run `server/build.sh`). After a failed start it isn't retried for
+5 minutes. `expoemu ui-server start` retries now and prints the error.
+
+**Maestro, Appium or `uiautomator` fails with "already registered" or gets
+killed.** Android allows one UI-automation connection at a time, and the UI
+server holds it. Run `expoemu ui-server stop` first, or set
+`EXPOEMU_UI_SERVER=0` while you use the other tool. expoemu restarts the
+server on the next UI command.
+
+**Screen read right after a tap shows the old screen.** Before reading, the
+server waits until the UI has been still for 300 ms. For slow transitions,
+use `wait-for "Text"` (it retries), or raise `EXPOEMU_UI_IDLE_MS`.
+
 ## Kiri (optional runtime)
 
 **"Kiri is not running (no socket at …)".**

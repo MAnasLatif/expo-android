@@ -70,6 +70,9 @@ directly. The container has a JDK for Gradle and native builds.
   `expoemu` name prefix. `cleanup.sh` selects by both.
 - `cleanup.sh --sdk` deletes `ENV_HOME` only if it contains the marker
   `.expoemu-root` written by setup.
+- The only thing installed on a device besides Expo Go is the UI server
+  (`dev.expoemu.server`): automatically on emulators, on phones only with
+  `EXPOEMU_UI_SERVER=1`. `expoemu ui-server remove` uninstalls it.
 
 ## Lifecycle and persistence
 
@@ -96,6 +99,40 @@ Commands choose their device in `require_device`: `EXPOEMU_DEVICE` (set by
 the CLI's global `--device`) can be a device name or a serial. Without it,
 commands use the default device. `open --all` and `screenshot --all` loop
 over `running_emulators`.
+
+## UI server (fast screen reads)
+
+Selector commands need the view hierarchy. `uiautomator dump` starts a new
+process, connects to accessibility and waits for a full second of idle UI
+on every call, about 2.7 s in total. `server/` is a small instrumentation
+APK that does the same work once and then stays connected:
+
+```text
+scripts/lib/ui-server.sh                       device (dev.expoemu.server)
+  curl 127.0.0.1:<host port>/dump  ── adb forward ──►  127.0.0.1:47219
+  X-Token: <random>                                    UiAutomation (kept open)
+                                                       → uiautomator-format XML
+```
+
+- `am instrument -w` starts it under `nohup`. The `am` process hosts the
+  UiAutomation connection, so it must stay alive.
+- Its XML is byte-identical to `uiautomator dump` (same attributes, NAF
+  flags, escaping and visible-bounds clipping), so `ui_rows`, `a11y_rows`
+  and `scroll_area` parse both the same way.
+- Per device, `~/.expoemu/run/ui-server-<serial>` holds the forwarded host
+  port and the token. Every command pings first (~10 ms). A wrong version
+  or no answer means stop, reinstall if needed, and start again (~2 s).
+- Fallback: any failure stops the server and runs `uiautomator dump`.
+  Android allows only one UiAutomation connection, and a running server
+  would get uiautomator killed. After a failed start, the server isn't
+  retried for 5 minutes. A lock directory keeps parallel commands from
+  starting it twice.
+- The APK version is a hash of its sources (`server/dist/version.txt`), so
+  every change reinstalls. It is signed with a public test key
+  (`server/expoemu-debug.keystore`), so new builds install over old ones.
+- The build (`server/build.sh`) uses aapt2 → javac → d8 → zipalign →
+  apksigner, with no Gradle. The build-tools/platform pins in
+  `server/versions.env` stay out of the Docker image hash.
 
 ## Container runtimes
 

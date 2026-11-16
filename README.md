@@ -19,6 +19,9 @@ expoemu up          # then, in any Expo project: phone boots, Metro starts, your
 - 🤖 **AI-assistant ready:** one command (`npx skills add MAnasLatif/expoemu`)
   gives Claude Code, Cursor, Codex & co. an [Agent Skill](#ai-assistant-skill-let-your-agent-test-the-app)
   to run, inspect, tap through and verify your app on their own
+- ⚡ **Fast screen reads:** `ui`, `tap-text`, `wait-for` and the other
+  selector commands take ~0.3 s instead of ~3 s, through a small
+  [helper on the emulator](#fast-ui-commands-the-ui-server)
 - 🧹 **Clean host:** everything on macOS lives in `~/.expoemu` and is
   removed with one command
 - 📌 **Reproducible:** every download is version-pinned and checksum-verified
@@ -132,6 +135,7 @@ wins over a partial one.
 | `texts` | Just the visible text |
 | `a11y [--all]` | Accessibility audit: buttons/inputs without a label (exit 1), touch targets under 48dp; `--all` adds missing testIDs |
 | `find "Text"` | Center `X Y` of an element |
+| `ui-server [status\|start\|stop\|remove]` | The helper that makes the commands above fast ([details](#fast-ui-commands-the-ui-server)) |
 
 **Touch**
 
@@ -422,6 +426,30 @@ are separate per runtime.
 > and Kiri doesn't document whether file-change events (needed for Fast
 > Refresh) cross its file sharing. Please report your results in an issue.
 
+## Fast UI commands (the UI server)
+
+Every selector command (`ui`, `texts`, `tap-text`, `fill`, `scroll-to`,
+`wait-for`, `assert-text`, `a11y` …) first reads the screen. Android's
+`uiautomator dump` needs about 3 s for that, so a short flow spent most of
+its time waiting.
+
+expoemu installs a tiny helper app (`dev.expoemu.server`, ~17 KB, no icon) on
+the emulator the first time you run one of these commands. It stays running
+and returns exactly the same screen data in ~0.1–0.3 s, so most commands now
+finish in under half a second.
+
+- **Automatic on emulators.** On physical phones it's off unless you set
+  `EXPOEMU_UI_SERVER=1` (it installs an app on the phone).
+- **Never in the way:** if the helper can't be installed, doesn't start or
+  stops answering, expoemu falls back to `uiautomator dump` on its own.
+  `expoemu status` shows which one each device uses.
+- **Quits by itself** after 15 minutes without requests. It only listens on
+  the device's own `127.0.0.1`, and every request needs a random token.
+- `expoemu ui-server stop` frees Android's single UI-automation connection
+  for other tools (Maestro, Appium, `uiautomator`). `ui-server remove`
+  uninstalls it. `EXPOEMU_UI_SERVER=0` turns it off completely.
+- Source: [server/](server/). The npm package ships the built APK.
+
 ## Cleanup and uninstall
 
 ```bash
@@ -443,7 +471,8 @@ git clone https://github.com/MAnasLatif/expoemu.git && cd expoemu
 scripts/setup.sh --project ~/code/my-expo-app
 ```
 
-Every `expoemu <cmd>` has a script in [scripts/](scripts/), e.g.
+Setup also builds the UI server APK (`server/build.sh`, in Docker). Every
+`expoemu <cmd>` has a script in [scripts/](scripts/), e.g.
 `scripts/emulator-start.sh`, `scripts/device.sh tap-text "Sign in"`. You can
 also run `node bin/expoemu.js <cmd>`.
 

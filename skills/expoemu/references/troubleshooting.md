@@ -54,6 +54,8 @@ each failure. Find the symptom below.
 | `rotate` has no effect | The app is locked by `app.json` `"orientation"`. |
 | `locale` change not visible | Reopen the app: `expoemu open`. |
 | `permission grant` fails | Only runtime permissions that the app declares can be granted. |
+| Each UI command takes ~3 s | The UI server isn't used. `expoemu ui-server status` says why. `expoemu ui-server start` retries and shows the error. |
+| Maestro / Appium / `uiautomator` killed or "already registered" | The UI server holds Android's single UI-automation connection: `expoemu ui-server stop` first. |
 
 ## Several devices
 

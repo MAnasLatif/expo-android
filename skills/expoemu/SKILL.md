@@ -6,7 +6,7 @@ compatibility: macOS (Intel or Apple Silicon) with Docker Desktop or Kiri, Node.
 allowed-tools: Bash(expoemu:*) Bash(expoemu:*) Bash(expoemu:*) Read
 metadata:
   author: MAnasLatif
-  version: "1.1.0"
+  version: "1.2.0"
   homepage: https://github.com/MAnasLatif/expoemu
 ---
 
@@ -114,6 +114,9 @@ to important elements. It is the most stable selector.
 - **Fresh state**: `expoemu app clear` wipes storage (AsyncStorage,
   SecureStore, permissions) and reopens the project.
 - **Rotation** has no effect if `app.json` locks `"orientation"`.
+- **Speed**: screen reads (`ui`, `tap-text`, `wait-for` …) take ~0.3 s through
+  the on-device UI server, which starts by itself. Before you use another
+  UI-automation tool (Maestro, Appium), run `expoemu ui-server stop`.
 - **Red error screen**: the stack trace is in `expoemu logcat` (tag `ReactNativeJS`).
 - **Several devices**: commands go to the default phone unless you add
   `--device NAME`. For `adb`, `shell` and `expo`, put `--device` before the
