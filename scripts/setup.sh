@@ -129,7 +129,6 @@ if [ "$SKIP_SDK" = 0 ]; then
   install_zip "$repo/emulator-${EMULATOR_FLAVOUR}-${EMULATOR_BUILD}.zip" \
     "$emu_sha" "$SDK_DIR/emulator" "$EMULATOR_BUILD"
 
-  SYS_IMG_REL="system-images/android-${SYSTEM_IMAGE_API}/${SYSTEM_IMAGE_TAG}/${SYS_IMG_ABI}"
   install_zip "$repo/sys-img/${SYSTEM_IMAGE_TAG}/${SYS_IMG_ABI}-${SYSTEM_IMAGE_API}_r${SYSTEM_IMAGE_REVISION}.zip" \
     "$img_sha" "$SDK_DIR/$SYS_IMG_REL" "${SYSTEM_IMAGE_API}_r${SYSTEM_IMAGE_REVISION}"
 
@@ -142,47 +141,9 @@ if [ "$SKIP_SDK" = 0 ]; then
     info "Recreating AVD $AVD_NAME (wipes its data)"; rm -rf "$avd_dir" "$AVD_HOME/$AVD_NAME.ini"
   fi
   if [ ! -f "$avd_dir/config.ini" ]; then
-    mkdir -p "$avd_dir"
-    cpu_arch="$([ "$HOST_ARCH" = x86_64 ] && echo x86_64 || echo arm64)"
-    cat > "$AVD_HOME/$AVD_NAME.ini" <<EOF
-avd.ini.encoding=UTF-8
-path=$avd_dir
-target=android-${SYSTEM_IMAGE_API}
-EOF
-    # Camera/microphone disabled: avoids macOS privacy prompts and saves CPU.
-    cat > "$avd_dir/config.ini" <<EOF
-avd.ini.encoding=UTF-8
-AvdId=$AVD_NAME
-avd.ini.displayname=Expo Pixel (API ${SYSTEM_IMAGE_API})
-abi.type=$SYS_IMG_ABI
-hw.cpu.arch=$cpu_arch
-hw.cpu.ncore=$AVD_CORES
-hw.ramSize=$AVD_RAM_MB
-vm.heapSize=256
-image.sysdir.1=$SYS_IMG_REL/
-tag.id=$SYSTEM_IMAGE_TAG
-tag.display=Google APIs
-target=android-${SYSTEM_IMAGE_API}
-PlayStore.enabled=false
-hw.device.name=$AVD_DEVICE_NAME
-hw.device.manufacturer=Google
-hw.lcd.width=$AVD_LCD_WIDTH
-hw.lcd.height=$AVD_LCD_HEIGHT
-hw.lcd.density=$AVD_LCD_DENSITY
-hw.keyboard=yes
-hw.mainKeys=no
-hw.gpu.enabled=yes
-hw.gpu.mode=$EMULATOR_GPU
-hw.accelerometer=yes
-hw.audioInput=no
-hw.camera.back=none
-hw.camera.front=none
-disk.dataPartition.size=$AVD_DATA_PARTITION
-showDeviceFrame=no
-fastboot.forceColdBoot=no
-runtime.network.latency=none
-runtime.network.speed=full
-EOF
+    # Default device = "phone" profile, overridable via the AVD_* settings.
+    write_avd "$AVD_NAME" "$AVD_DEVICE_NAME" "$AVD_LCD_WIDTH" "$AVD_LCD_HEIGHT" \
+      "$AVD_LCD_DENSITY" "$AVD_RAM_MB" phone
     ok "Created AVD $AVD_NAME ($AVD_DEVICE_NAME, API ${SYSTEM_IMAGE_API}, $SYS_IMG_ABI)"
   else
     ok "AVD $AVD_NAME already exists (use --recreate-avd to rebuild it)"

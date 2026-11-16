@@ -78,6 +78,7 @@ cmd() {
     expo.sh) sub=expo ;;            open-app.sh) sub=open ;;
     status.sh) sub=status ;;        screenshot.sh) sub=screenshot ;;
     cleanup.sh) sub=cleanup ;;      device.sh|system.sh|app.sh) sub=help ;;
+    devices.sh) sub=devices ;;
     emulator-start.sh) sub="emulator start" ;;
     emulator-stop.sh) sub="emulator stop" ;;
     *) sub="${script%.sh}" ;;
@@ -138,6 +139,8 @@ load_config() {
   export ANDROID_ADB_SERVER_PORT="$ADB_SERVER_PORT"
 
   detect_arch
+  # System image path inside the SDK (shared by every device/AVD).
+  SYS_IMG_REL="system-images/android-${SYSTEM_IMAGE_API}/${SYSTEM_IMAGE_TAG}/${SYS_IMG_ABI}"
   select_runtime
 }
 
@@ -289,14 +292,124 @@ adb_host() { "$ADB" -P "$ADB_SERVER_PORT" "$@"; }
 
 # Serial of the first running emulator (empty if none).
 emulator_serial() {
-  adb_host devices 2>/dev/null | awk '/^emulator-[0-9]+[[:space:]]+device$/ {print $1; exit}'
+  adb_host devices 2>/dev/null | awk '/^emulator-[0-9]+[[:space:]]+device$/ && !f {print $1; f=1}'
 }
 
-# Ensure an emulator is online and export ANDROID_SERIAL for later adb calls.
+# --- Several emulators at once --------------------------------------------------
+# Every emulator is a named AVD ("device"). The default one is $AVD_NAME and can
+# also be called "default". Commands target a device with --device NAME (the
+# CLI exports EXPOEMU_DEVICE) or the default device when several are running.
+
+# "default" -> $AVD_NAME; anything else unchanged.
+device_name() { if [ "${1:-}" = default ] || [ -z "${1:-}" ]; then echo "$AVD_NAME"; else echo "$1"; fi; }
+
+# One line per running emulator: "<serial> <avd name>".
+running_emulators() {
+  local s name
+  for s in $(adb_host devices 2>/dev/null | awk '/^emulator-[0-9]+[[:space:]]+device$/ {print $1}'); do
+    name="$(adb_host -s "$s" emu avd name 2>/dev/null | tr -d '\r' | awk 'NR == 1')"
+    printf '%s %s\n' "$s" "${name:-unknown}"
+  done
+}
+
+# Serial of the running emulator for device NAME (empty if not running).
+serial_for_device() {
+  local want
+  want="$(device_name "$1")"
+  running_emulators | awk -v n="$want" '$2 == n && !f { print $1; f = 1 }'
+}
+
+# Pick the target emulator and export ANDROID_SERIAL for later adb calls.
+#   EXPOEMU_DEVICE=<name|serial>  -> that device
+#   otherwise                      -> the default device if running, else the first one
 require_device() {
   require_sdk
-  local serial
-  serial="$(emulator_serial)"
-  [ -n "$serial" ] || die "No running emulator. Start one with: $(cmd emulator-start.sh)"
+  local want="${EXPOEMU_DEVICE:-}" serial=""
+  if [ -n "$want" ]; then
+    if [[ "$want" == emulator-* ]]; then
+      running_emulators | awk '{print $1}' | grep -qx "$want" && serial="$want"
+    else
+      serial="$(serial_for_device "$want")"
+    fi
+    [ -n "$serial" ] || die "Device '$want' is not running. Start it with: $(cmd emulator-start.sh) --device $want"
+  else
+    serial="$(serial_for_device "$AVD_NAME")"
+    [ -n "$serial" ] || serial="$(emulator_serial)"
+    [ -n "$serial" ] || die "No running emulator. Start one with: $(cmd emulator-start.sh)"
+  fi
   export ANDROID_SERIAL="$serial"
+}
+
+# --- Device profiles and AVD creation --------------------------------------------
+PROFILES="phone small large tablet foldable"
+# profile -> "<hw.device.name> <width> <height> <density> <ram MB>"
+profile_spec() {
+  case "$1" in
+    phone)    echo "pixel_8 1080 2400 420 4096" ;;         # default: Pixel 8
+    small)    echo "small_phone 720 1600 320 2048" ;;      # budget / small screen
+    large)    echo "pixel_9_pro_xl 1344 2992 480 4096" ;;  # large flagship
+    tablet)   echo "pixel_tablet 2560 1600 320 4096" ;;    # 10.95" tablet, landscape
+    foldable) echo "pixel_fold 2208 1840 420 4096" ;;      # unfolded inner screen
+    *) return 1 ;;
+  esac
+}
+
+# write_avd NAME HW_DEVICE WIDTH HEIGHT DENSITY RAM_MB PROFILE
+# Writes the AVD config directly (avdmanager would need Java on macOS).
+# All devices share the one system image; each only adds its own data disk.
+write_avd() {
+  local name="$1" hwdev="$2" w="$3" h="$4" dpi="$5" ram="$6" profile="$7"
+  local dir="$AVD_HOME/$name.avd" cpu_arch
+  cpu_arch="$([ "$HOST_ARCH" = x86_64 ] && echo x86_64 || echo arm64)"
+  mkdir -p "$dir"
+  cat > "$AVD_HOME/$name.ini" <<EOF
+avd.ini.encoding=UTF-8
+path=$dir
+target=android-${SYSTEM_IMAGE_API}
+EOF
+  # Camera/microphone disabled: avoids macOS privacy prompts and saves CPU.
+  cat > "$dir/config.ini" <<EOF
+avd.ini.encoding=UTF-8
+AvdId=$name
+avd.ini.displayname=Expo Emulator $name ($profile, API ${SYSTEM_IMAGE_API})
+expoemu.profile=$profile
+abi.type=$SYS_IMG_ABI
+hw.cpu.arch=$cpu_arch
+hw.cpu.ncore=$AVD_CORES
+hw.ramSize=$ram
+vm.heapSize=256
+image.sysdir.1=$SYS_IMG_REL/
+tag.id=$SYSTEM_IMAGE_TAG
+tag.display=Google APIs
+target=android-${SYSTEM_IMAGE_API}
+PlayStore.enabled=false
+hw.device.name=$hwdev
+hw.device.manufacturer=Google
+hw.lcd.width=$w
+hw.lcd.height=$h
+hw.lcd.density=$dpi
+hw.keyboard=yes
+hw.mainKeys=no
+hw.gpu.enabled=yes
+hw.gpu.mode=$EMULATOR_GPU
+hw.accelerometer=yes
+hw.audioInput=no
+hw.camera.back=none
+hw.camera.front=none
+disk.dataPartition.size=$AVD_DATA_PARTITION
+showDeviceFrame=no
+fastboot.forceColdBoot=no
+runtime.network.latency=none
+runtime.network.speed=full
+EOF
+}
+
+# Names of all created devices (AVDs), default first.
+list_devices() {
+  local f n
+  [ -f "$AVD_HOME/$AVD_NAME.ini" ] && echo "$AVD_NAME"
+  for f in "$AVD_HOME"/*.ini; do
+    [ -f "$f" ] || continue
+    n="$(basename "$f" .ini)"; [ "$n" = "$AVD_NAME" ] || echo "$n"
+  done
 }
