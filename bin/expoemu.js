@@ -33,6 +33,7 @@ const DEVICE_CMDS = [ // scripts/device.sh — touch, elements, waits, keys
   'text', 'clear', 'fill', 'hide-keyboard', 'key', 'back', 'home', 'recents',
   'enter', 'lock', 'unlock',
   'logcat', 'reload', 'devmenu', 'open-url', 'activity', 'size', 'adb',
+  'ui-server',
 ];
 const SYSTEM_CMDS = [ // scripts/system.sh — device state, capture, info
   'rotate', 'dark-mode', 'font-scale', 'animations', 'network', 'airplane',
@@ -145,6 +146,8 @@ VISUAL REGRESSION
       [--threshold 0.1] [--tolerance 16] [--mask x1,y1,x2,y2] [--include-status-bar]
 
 OTHER
+  ui-server [status|start|stop|remove]   on-device helper that makes UI commands ~10x faster
+                                   (automatic on emulators; EXPOEMU_UI_SERVER=0 off, =1 phones too)
   check-versions [--verify-sync]   compare pinned tool versions with upstream
   help | --version
 

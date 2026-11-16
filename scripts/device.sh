@@ -46,8 +46,14 @@
 #   size                         screen size in pixels
 #   logcat [--errors|--all] [-n N] [--follow] [--clear]
 #   adb ARGS…                    raw adb against the emulator
+#
+# UI SERVER (makes ui/tap-text/wait-for… ~10x faster; falls back automatically)
+#   ui-server [status|start|stop|remove]
+#                                EXPOEMU_UI_SERVER=0 turns it off, =1 also uses
+#                                it on physical phones (default: emulators only)
 # =============================================================================
 source "$(dirname "$0")/lib/common.sh"
+source "$(dirname "$0")/lib/ui-server.sh"
 load_config
 
 cmd="${1:-help}"; shift || true
@@ -64,8 +70,7 @@ screen_size() {
 # screen if none. Swipes must START inside a scroll view to scroll it.
 scroll_area() {
   local area
-  sh uiautomator dump /sdcard/window_dump.xml >/dev/null 2>&1 || true
-  area="$(adb_host exec-out cat /sdcard/window_dump.xml 2>/dev/null | perl -ne '
+  area="$(dump_xml 2>/dev/null | perl -ne '
     while (/<node ([^>]*?)\/?>/g) {
       my $a = $1;
       next unless $a =~ /scrollable="true"/;
@@ -81,8 +86,9 @@ scroll_area() {
 #   <centerX> <centerY> | text | content-desc | resource-id | class | flags
 # text falls back to the field's hint (placeholder) when the field is empty.
 ui_rows() {
-  sh uiautomator dump /sdcard/window_dump.xml >/dev/null 2>&1 || die "uiautomator dump failed (is the screen locked or animating?)"
-  adb_host exec-out cat /sdcard/window_dump.xml | perl -ne '
+  local xml
+  xml="$(dump_xml)" || die "UI dump failed (is the screen locked or animating?)"
+  printf '%s\n' "$xml" | perl -ne '
     while (/<node ([^>]*?)\/?>/g) {
       my $a = $1; my %h;
       $h{$1} = $2 while $a =~ /([\w-]+)="([^"]*)"/g;
@@ -113,8 +119,9 @@ a11y_rows() {
   local all="$1" density min_px
   density="$(sh wm density | tr -d '\r' | awk -F': ' '/Override/ {o=$2} /Physical/ {p=$2} END {print (o ? o : p)}')"
   min_px=$(( 48 * ${density:-420} / 160 ))
-  sh uiautomator dump /sdcard/window_dump.xml >/dev/null 2>&1 || die "uiautomator dump failed (is the screen locked or animating?)"
-  adb_host exec-out cat /sdcard/window_dump.xml | perl -e '
+  local xml
+  xml="$(dump_xml)" || die "UI dump failed (is the screen locked or animating?)"
+  printf '%s\n' "$xml" | perl -e '
     my ($min, $density, $all) = @ARGV; local $/; my $xml = <STDIN>;
     my @stack;
     sub done {
@@ -240,9 +247,9 @@ case "$cmd" in
   # --- Elements ---------------------------------------------------------------
   ui)
     if [ "${1:-}" = "--xml" ]; then
-      sh uiautomator dump /sdcard/window_dump.xml >/dev/null 2>&1 || die "uiautomator dump failed"
+      xml="$(dump_xml)" || die "UI dump failed (is the screen locked or animating?)"
       file="$(screenshot_dir)/ui-$(date +%Y%m%d-%H%M%S).xml"
-      adb_host exec-out cat /sdcard/window_dump.xml > "$file"
+      printf '%s\n' "$xml" > "$file"
       printf '%s\n' "$file"; exit 0
     fi
     echo "# centerX centerY | text | content-desc | testID | class | flags"
@@ -375,5 +382,33 @@ case "$cmd" in
                 | awk '/topResumedActivity|mResumedActivity/ && !f { sub(/^ */, ""); print; f = 1 }' ;;
   size)       screen_size ;;
   adb)        adb_host "$@" ;;
+
+  # --- UI server (fast UI dumps; see scripts/lib/ui-server.sh) ---------------
+  ui-server)
+    case "${1:-status}" in
+      status)
+        why="$(ui_server_unavailable)"
+        if [ -n "$why" ]; then
+          echo "UI server: not used — $why (UI dumps use uiautomator)"
+        elif ui_server_alive; then
+          echo "UI server: running ($(ui_server_expected_version), port $UI_PORT)"
+        else
+          echo "UI server: stopped (starts on the next UI command)"
+        fi ;;
+      start)
+        why="$(ui_server_unavailable)"
+        [ -z "$why" ] || die "UI server not available: $why"
+        rm -f "$(ui_server_state_file).failed"
+        ui_server_ensure || die "UI server failed to start (UI dumps fall back to uiautomator). Logs: $(cmd device.sh) logcat --all | grep expoemu-ui"
+        ok "UI server running ($(ui_server_expected_version), port $UI_PORT)" ;;
+      stop)
+        ui_server_stop; ok "UI server stopped" ;;
+      remove)
+        ui_server_stop
+        adb_host uninstall "$UI_SERVER_PKG" >/dev/null 2>&1 || true
+        rm -f "$(ui_server_state_file).failed"
+        ok "UI server removed from $ANDROID_SERIAL" ;;
+      *) die "usage: ui-server status|start|stop|remove" ;;
+    esac ;;
   *) die "Unknown command: $cmd (try: $(cmd device.sh)$([ -n "${EXPOEMU_CLI:-}" ] || echo ' help'))" ;;
 esac

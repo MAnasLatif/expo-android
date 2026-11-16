@@ -186,6 +186,7 @@ random content, or Expo Go's floating "Tools" tooltip near the top right.
 
 | Command | What it does |
 |---------|--------------|
+| `ui-server [status\|start\|stop\|remove]` | The on-device helper behind `ui`, `tap-text`, `wait-for` and every other selector command: ~0.3 s per screen read instead of ~3 s. Starts by itself on emulators and falls back to `uiautomator` on any problem. `stop` frees the accessibility connection for other tools (Maestro, Appium); `remove` uninstalls it. |
 | `check-versions [--verify-sync]` | Compare pinned tool versions with upstream. |
 | `help` · `--version` | Usage / version. |
 
@@ -196,5 +197,7 @@ Settings file: `~/.expoemu/config.env` (git clone: repo `.env`). Useful keys:
 `EMULATOR_GPU` (`host` or `swiftshader_indirect`), `CONTAINER_RUNTIME`
 (`docker` or `kiri`), `METRO_PORT` (8081), `ADB_SERVER_PORT` (5037),
 `SCREENSHOT_DIR` (`.android-screenshots`), `EXPOEMU_NO_UPDATE_CHECK=1` (no
-newer-version notice). Environment variables with the
+newer-version notice), `EXPOEMU_UI_SERVER` (`0` = always use `uiautomator`,
+`1` = also use the UI server on physical phones), `EXPOEMU_UI_IDLE_MS` (how long
+the screen must be still before it is read, default 300). Environment variables with the
 same names override the file for one command.
