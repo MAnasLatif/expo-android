@@ -32,6 +32,13 @@ elif image_outdated; then
 fi
 
 # --- 2. Container (recreated automatically if the project changed) --------
+# A container from expoemu 0.1.0 (old name) would hold port 8081: remove it.
+# Only the container — its image/volumes stay until `cleanup --legacy`.
+legacy="$(docker ps -aq --filter "label=com.$LEGACY_NAME.managed=true" --filter "name=^${LEGACY_NAME}$")"
+if [ -n "$legacy" ]; then
+  docker rm -f "$legacy" >/dev/null && info "Removed the old 0.1.0 container (run '$(cmd cleanup.sh) --legacy' to free its disk space)"
+fi
+
 info "Starting container for $PROJECT_DIR"
 fit_resource_limits
 compose up -d --remove-orphans >/dev/null

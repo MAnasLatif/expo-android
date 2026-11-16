@@ -33,6 +33,29 @@ LABEL="com.expoemu.managed=true"
 CONTAINER_NAME="expoemu"
 IMAGE_NAME="expoemu:local"
 
+# --- One-time migration from the 0.1.0 layout --------------------------------
+# expoemu 0.1.0 used a different folder (~/.<LEGACY_NAME>) and Docker names.
+# Move (never re-download) the SDK/AVD folder to ~/.expoemu, fix the absolute
+# AVD path inside it, and point settings files at the new folder. Skipped while
+# an emulator from the old folder is still running.
+# (Name built from parts on purpose — keep it as is.)
+LEGACY_NAME="expo-android""-env"
+migrate_legacy_home() {
+  local old="$HOME/.$LEGACY_NAME" new="$HOME/.expoemu" f
+  [ -f "$old/.$LEGACY_NAME-root" ] && [ ! -e "$new" ] || return 0
+  if pgrep -f "$old/sdk/emulator" >/dev/null 2>&1; then
+    printf 'expoemu: stop the running emulator once (old location) so ~/.%s can move to ~/.expoemu\n' "$LEGACY_NAME" >&2
+    return 0
+  fi
+  mv "$old" "$new" && mv "$new/.$LEGACY_NAME-root" "$new/.expoemu-root"
+  for f in "$new"/avd/*.ini; do [ -f "$f" ] && sed -i '' "s#$old/#$new/#g" "$f"; done
+  for f in "$new/config.env" "$REPO_ROOT/.env"; do
+    [ -f "$f" ] && sed -i '' "s#\${HOME}/\.$LEGACY_NAME\$#\${HOME}/.expoemu#; s#$old\$#$new#" "$f"
+  done
+  printf 'expoemu: moved ~/.%s to ~/.expoemu (one-time rename)\n' "$LEGACY_NAME" >&2
+}
+migrate_legacy_home
+
 # --- Logging -----------------------------------------------------------------
 if [ -t 2 ] && [ -z "${NO_COLOR:-}" ]; then
   C_RESET=$'\033[0m'; C_BLUE=$'\033[34m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'; C_RED=$'\033[31m'

@@ -43,7 +43,7 @@ Waits and asserts exit 0 on success and 1 on failure.
 | Permissions | `npx expoemu permission grant CAMERA` · `permission revoke CAMERA` |
 | Performance | `npx expoemu perf --reset` → interact → `npx expoemu perf` · `npx expoemu memory` |
 | Reload / reopen | `npx expoemu reload` · `npx expoemu open` |
-| Add a package | `npx expoemu shell bun add <pkg>` |
+| Add a package | `npx expoemu shell npm install <pkg>` (or yarn / pnpm / bun, matching the project) |
 
 Screenshots and recordings go to `./.android-screenshots/`, and
 `latest.png` is always the newest screenshot. Read the PNG to inspect the UI.

@@ -36,32 +36,53 @@ npx expoemu up    # phone boots, Metro starts, your app opens
 - Node.js 18+ (for `npx`) or Bun (`bunx expoemu …` works too)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/), or
   optionally [Kiri](https://runkiri.com) (see [Using Kiri](#optional-using-kiri-instead-of-docker-desktop))
-- About 10 GB free disk space (SDK and system image ~6 GB, AVD data ~2 GB,
-  Docker image ~0.6 GB, plus `node_modules` volumes)
+- About 14 GB free disk space (SDK and system image ~6 GB, phone data and
+  quick-boot snapshots ~6 GB, Docker image ~2 GB)
 - An Expo project that uses **Expo Go**
 
 ## Quick start
 
-Run everything **from your Expo project folder**:
+**Set up once** (from any folder):
+
+```bash
+npx expoemu setup     # isolated Android SDK + Pixel phone + Docker image (~10 min, once per Mac)
+```
+
+**Then, in any Expo project:**
 
 ```bash
 cd ~/code/my-expo-app
-
-npx expoemu setup     # once: isolated SDK + Pixel AVD + Docker image (~10 min)
-npx expoemu up        # every session: phone + container + Metro + open the app
+npx expoemu up        # phone + container + Metro + opens the app (~30 s)
 # … edit code, Fast Refresh updates the phone …
 npx expoemu down      # stop everything
 ```
 
-Next time, `npx expoemu up` takes about 30 seconds. Nothing is reinstalled.
+Switch projects by running `npx expoemu up` in another project folder. Nothing
+is reinstalled.
 
-**Recommended for teams and AI assistants:** add it to the project, so the
-version is pinned and `npx` never prompts:
+**Optional:**
+- Install globally (`npm i -g expoemu`) to drop the `npx`: `expoemu up`,
+  `expoemu screenshot`…
+- For teams, pin the version in the project (`npm i -D expoemu`), so everyone
+  and every AI assistant runs the same version and `npx` never prompts.
 
-```bash
-npm i -D expoemu      # or: bun add -d expoemu
-npx expoemu up
-```
+### Install once, test every project
+
+Your projects stay clean. Everything Expo Emulator needs lives in hidden or
+managed places:
+
+| What | Where | In your project? |
+|------|-------|------------------|
+| The `expoemu` code | npm's cache (`~/.npm/_npx/…`) or the global npm folder | No |
+| Android SDK, emulator, the Pixel phone, logs, settings | `~/.expoemu/` | No |
+| Toolchain (JDK, Node, Bun, Expo CLI, Metro) | Docker image `expoemu:local` | No |
+| Linux `node_modules`, Bun/Expo/Gradle caches | Docker volumes `expoemu_*` | No |
+| Screenshots and recordings | `./.android-screenshots/`, git-ignored automatically | Yes, so you and AI assistants can open them |
+
+Dependencies are installed with **your project's own package manager**
+(npm, yarn, pnpm or bun, picked from your lockfile) in a mode that never
+rewrites your files. No lockfile or config is added to your project. Remove
+everything with `npx expoemu cleanup --all`.
 
 ## Commands
 
@@ -75,7 +96,7 @@ npx expoemu up
 | `npx expoemu start` / `stop` | Only the container (runs `bun install` on first use) |
 | `npx expoemu expo [--background\|--logs\|--stop]` | Metro (interactive by default) |
 | `npx expoemu open [--reinstall]` | Install the matching Expo Go if needed and open the app |
-| `npx expoemu shell [cmd…]` | Shell or command in the container, e.g. `npx expoemu shell bun add zod` |
+| `npx expoemu shell [cmd…]` | Shell or command in the container, e.g. `npx expoemu shell npm install zod` (use your project's package manager) |
 | `npx expoemu cleanup …` | Scoped removal: `--project`, `--caches`, `--image`, `--sdk`, `--all` |
 
 ### Device actions
@@ -191,7 +212,7 @@ recreated with that project mounted. Each project keeps its own Linux
 `node_modules` volume. Bun, Expo and Gradle caches are shared.
 
 > **Note:** The container's `node_modules` is a Docker volume that hides your
-> macOS `node_modules`. Add packages with `npx expoemu shell bun add <pkg>`.
+> macOS `node_modules`. Add packages with your package manager inside the container, e.g. `npx expoemu shell npm install <pkg>`.
 > A macOS `bun install` for editor types also works. The two copies don't
 > interfere.
 
@@ -223,6 +244,7 @@ are separate per runtime.
 npx expoemu cleanup --project     # this project's node_modules volume
 npx expoemu cleanup --caches      # all volumes created by expoemu
 npx expoemu cleanup --all         # full uninstall: container, volumes, image, ~/.expoemu
+npx expoemu cleanup --legacy      # upgraded from 0.1.0? remove its old Docker image/volumes
 ```
 
 Cleanup shows what it will remove and asks first. It only touches resources

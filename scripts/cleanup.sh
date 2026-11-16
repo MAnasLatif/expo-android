@@ -8,6 +8,8 @@
 #   scripts/cleanup.sh --image                remove the expoemu image
 #   scripts/cleanup.sh --sdk                  delete the isolated SDK + AVD ($ENV_HOME)
 #   scripts/cleanup.sh --all                  all of the above (full uninstall)
+#   scripts/cleanup.sh --legacy               remove Docker leftovers of expoemu 0.1.0
+#                                             (old container/image/volume names)
 #   add --yes to skip the confirmation prompt
 #
 # Safety: Docker resources are selected by the label
@@ -18,8 +20,8 @@
 source "$(dirname "$0")/lib/common.sh"
 load_config
 
-DO_CONT=0 DO_PROJ=0 DO_CACHE=0 DO_IMAGE=0 DO_SDK=0 YES=0 PROJ_ARG=""
-[ $# -gt 0 ] || { sed -n '2,17p' "$0"; exit 1; }
+DO_CONT=0 DO_PROJ=0 DO_CACHE=0 DO_IMAGE=0 DO_SDK=0 DO_LEGACY=0 YES=0 PROJ_ARG=""
+[ $# -gt 0 ] || { sed -n '2,/^# =====*$/p' "$0"; exit 1; }
 while [ $# -gt 0 ]; do
   case "$1" in
     --containers) DO_CONT=1 ;;
@@ -27,9 +29,10 @@ while [ $# -gt 0 ]; do
     --caches) DO_CACHE=1 ;;
     --image) DO_IMAGE=1 ;;
     --sdk) DO_SDK=1 ;;
-    --all) DO_CONT=1; DO_CACHE=1; DO_IMAGE=1; DO_SDK=1 ;;
+    --all) DO_CONT=1; DO_CACHE=1; DO_IMAGE=1; DO_SDK=1; DO_LEGACY=1 ;;
+    --legacy) DO_LEGACY=1 ;;
     --yes|-y) YES=1 ;;
-    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,/^# =====*$/p' "$0"; exit 0 ;;
     *) die "Unknown option: $1" ;;
   esac; shift
 done
@@ -57,6 +60,17 @@ if [ "$DO_CONT$DO_PROJ$DO_CACHE$DO_IMAGE" != 0000 ]; then
   fi
 fi
 
+# Leftovers from expoemu 0.1.0 (old label and name prefix, LEGACY_NAME from
+# common.sh). Same double check: legacy label AND legacy name prefix.
+PLAN_LEGACY_CONTAINERS="" PLAN_LEGACY_VOLUMES="" PLAN_LEGACY_IMAGES=""
+if [ "$DO_LEGACY" = 1 ]; then
+  require_docker
+  legacy_label="com.$LEGACY_NAME.managed=true"
+  PLAN_LEGACY_CONTAINERS="$(docker ps -a --filter "label=$legacy_label" --format '{{.Names}}' | grep "^$LEGACY_NAME" || true)"
+  PLAN_LEGACY_VOLUMES="$(docker volume ls -q --filter "label=$legacy_label" | grep "^${LEGACY_NAME}_" || true)"
+  PLAN_LEGACY_IMAGES="$(docker images --filter "label=$legacy_label" --format '{{.Repository}}:{{.Tag}}' | grep "^$LEGACY_NAME:" || true)"
+fi
+
 if [ "$DO_SDK" = 1 ] && [ -d "$ENV_HOME" ]; then
   # Guard against a mis-set ENV_HOME (/, $HOME, or a folder setup didn't create).
   if [ ! -f "$ENV_HOME/.expoemu-root" ] || [ "$ENV_HOME" = "$HOME" ] || [ "$ENV_HOME" = "/" ]; then
@@ -66,10 +80,13 @@ if [ "$DO_SDK" = 1 ] && [ -d "$ENV_HOME" ]; then
 fi
 
 # --- 2. Show the plan and confirm once ----------------------------------------
-if [ -z "$PLAN_CONTAINER$PLAN_VOLUMES$PLAN_IMAGE$PLAN_SDK" ]; then
+if [ -z "$PLAN_CONTAINER$PLAN_VOLUMES$PLAN_IMAGE$PLAN_SDK$PLAN_LEGACY_CONTAINERS$PLAN_LEGACY_VOLUMES$PLAN_LEGACY_IMAGES" ]; then
   ok "Nothing to remove"; exit 0
 fi
 echo "The following will be removed:" >&2
+[ -n "$PLAN_LEGACY_CONTAINERS" ] && echo "$PLAN_LEGACY_CONTAINERS" | sed 's/^/   container  (0.1.0) /' >&2
+[ -n "$PLAN_LEGACY_VOLUMES" ]    && echo "$PLAN_LEGACY_VOLUMES" | sed 's/^/   volume     (0.1.0) /' >&2
+[ -n "$PLAN_LEGACY_IMAGES" ]     && echo "$PLAN_LEGACY_IMAGES" | sed 's/^/   image      (0.1.0) /' >&2
 [ -n "$PLAN_CONTAINER" ] && echo "   container  $PLAN_CONTAINER" >&2
 [ -n "$PLAN_VOLUMES" ]   && echo "$PLAN_VOLUMES" | sed 's/^/   volume     /' >&2
 [ -n "$PLAN_IMAGE" ]     && echo "   image      $PLAN_IMAGE" >&2
@@ -82,6 +99,12 @@ if [ "$YES" != 1 ]; then
 fi
 
 # --- 3. Execute ----------------------------------------------------------------------
+# shellcheck disable=SC2086
+{
+  [ -z "$PLAN_LEGACY_CONTAINERS" ] || { docker rm -f $PLAN_LEGACY_CONTAINERS >/dev/null && ok "Removed 0.1.0 container(s)"; }
+  [ -z "$PLAN_LEGACY_VOLUMES" ]    || { docker volume rm $PLAN_LEGACY_VOLUMES >/dev/null && ok "Removed 0.1.0 volume(s)"; }
+  [ -z "$PLAN_LEGACY_IMAGES" ]     || { docker image rm $PLAN_LEGACY_IMAGES >/dev/null && ok "Removed 0.1.0 image"; }
+}
 if [ -n "$PLAN_CONTAINER" ]; then
   docker rm -f "$PLAN_CONTAINER" >/dev/null && ok "Removed container $PLAN_CONTAINER"
 fi

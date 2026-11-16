@@ -6,6 +6,18 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+
+- Install once, test every project. The first-run dependency install uses the
+  project's own package manager (npm `ci`, yarn/pnpm frozen lockfile, bun),
+  and `bun install --no-save` when there is no lockfile, so nothing is
+  written into the project. `.android-screenshots/` ignores itself in git.
+- Upgrading from 0.1.0: the npm 0.1.0 package used older internal names for
+  its folder and Docker resources. The folder moves to `~/.expoemu`
+  automatically on first run (no re-download), the old container is
+  replaced, and `npx expoemu cleanup --legacy` removes the old image and
+  volumes.
+
 ### Added
 
 - npm package **`expoemu`**: `npx expoemu setup | up | down | status | screenshot |
