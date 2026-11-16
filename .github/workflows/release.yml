@@ -105,7 +105,7 @@ jobs:
       - name: Pinned versions in sync
         run: scripts/check-versions.sh --verify-sync
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
