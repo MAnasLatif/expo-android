@@ -6,6 +6,26 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Physical Android phones (USB, or Wi-Fi via `expoemu adb connect`) work
+  like emulators. They are listed in `devices` by model name, targeted with
+  `--device`, and included in `open --all`, `screenshot --all` and `status`.
+- Slow-network profiles: `network gprs|edge|3g|4g|full` (speed + latency).
+- `sms`, `call` / `call accept|end`, and `biometric enroll|touch|fail|status|reset`
+  for OTP, call-interruption and fingerprint-login testing. `unlock` types
+  the test PIN that `biometric enroll` sets.
+- `a11y [--all]` accessibility audit: unlabeled buttons/inputs (exit 1),
+  touch targets under 48dp, and missing testIDs.
+- Notice when a newer release is available (terminal and `status`; checks
+  npm at most once a day in the background; `EXPOEMU_NO_UPDATE_CHECK=1` turns
+  it off).
+
+### Fixed
+
+- Commands that loop over devices no longer skip every device after the
+  first. `adb shell` inside the loop was consuming the device list.
+
 ## [0.4.0] - 2026-11-16
 
 ### Added
