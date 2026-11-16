@@ -25,3 +25,6 @@ tmp/
 .vscode/
 .idea/
 *.swp
+
+# --- UI server build output (server/build.sh; shipped in the npm package) ---
+server/dist/

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  expoemu UI server: a tiny instrumentation-only APK (no activity, no icon).
+  `am instrument` starts it; it then answers UI-dump requests over a local
+  socket so expoemu doesn't pay uiautomator's ~2-3 s start-up on every call.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="dev.expoemu.server">
+
+  <!-- Needed to open the local (127.0.0.1) listening socket. -->
+  <uses-permission android:name="android.permission.INTERNET" />
+
+  <application android:label="expoemu UI server" android:allowBackup="false" />
+
+  <instrumentation
+      android:name=".Server"
+      android:targetPackage="dev.expoemu.server"
+      android:label="expoemu UI server" />
+</manifest>
