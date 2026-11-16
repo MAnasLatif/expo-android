@@ -6,6 +6,17 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- UI commands are about 10x faster. `ui`, `texts`, `find`, `tap-text`,
+  `fill`, `scroll`, `scroll-to`, `wait-for`, `assert-text` and `a11y` read
+  the screen in ~0.3 s instead of ~3 s through a tiny helper app on the
+  emulator (`dev.expoemu.server`). It installs and starts on first use and
+  returns exactly what `uiautomator dump` returns. On any problem expoemu
+  falls back to uiautomator. `expoemu ui-server status|start|stop|remove`
+  manages it, and `expoemu status` shows it per device. On physical phones
+  it's opt-in (`EXPOEMU_UI_SERVER=1`). `EXPOEMU_UI_SERVER=0` turns it off.
+
 ## [0.6.0] - 2026-11-16
 
 ### Added
