@@ -81,6 +81,22 @@ directly. The container has a JDK for Gradle and native builds.
 | `scripts/cleanup.sh --caches` | all env volumes | image, SDK |
 | `scripts/cleanup.sh --all` | everything this project created | your projects |
 
+## Several emulators
+
+Each device is an AVD under `~/.expoemu/avd/`, written directly from a
+profile (`scripts/lib/common.sh` → `write_avd`). All AVDs point at the same
+system image, so a new device only adds its data disk.
+
+Running emulators take consecutive console/adb port pairs (5554/5555,
+5556/5557, …) and all register with the **one** adb server, so the
+container sees every device. Metro's port is reversed into each device, so
+one Metro serves all of them, and each device runs its own copy of the app.
+
+Commands choose their device in `require_device`: `EXPOEMU_DEVICE` (set by
+the CLI's global `--device`) can be a device name or a serial. Without it,
+commands use the default device. `open --all` and `screenshot --all` loop
+over `running_emulators`.
+
 ## Container runtimes
 
 The container side works with any engine that speaks the Docker Engine API

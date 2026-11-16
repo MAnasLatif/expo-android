@@ -41,6 +41,7 @@ Waits and asserts exit 0 on success and 1 on failure.
 | Fresh state | `npx expoemu app clear` (wipes storage, reopens the project) |
 | Edge cases | `npx expoemu network off` · `dark-mode on` · `font-scale 1.3` · `rotate landscape` · `locale ar` |
 | Permissions | `npx expoemu permission grant CAMERA` · `permission revoke CAMERA` |
+| Several devices | `npx expoemu devices` · `npx expoemu emulator start --device tablet` · add `--device NAME` to any command · `open --all` · `screenshot --all` |
 | Performance | `npx expoemu perf --reset` → interact → `npx expoemu perf` · `npx expoemu memory` |
 | Reload / reopen | `npx expoemu reload` · `npx expoemu open` |
 | Add a package | `npx expoemu shell npm install <pkg>` (or yarn / pnpm / bun, matching the project) |
@@ -76,6 +77,9 @@ Reset any state you change, e.g. `network on`, `dark-mode off`,
 
 ## Notes
 
+- With several devices running, every command uses the default phone
+  unless you add `--device NAME` (see `npx expoemu devices`). Coordinates
+  differ per device: use `ui --device NAME` for that device.
 - Coordinates are **device pixels** (default 1080 × 2400). Screenshots are
   the same size, so pixel positions in a screenshot can be tapped directly.
 - `fill`, `tap-text` and `scroll` hide the on-screen keyboard first. This

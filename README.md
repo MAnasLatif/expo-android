@@ -216,6 +216,47 @@ recreated with that project mounted. Each project keeps its own Linux
 > A macOS `bun install` for editor types also works. The two copies don't
 > interfere.
 
+## Several devices at once
+
+Test on a phone, a tablet and a small screen side by side, or run two or
+three emulators for apps that talk to each other (chat, multiplayer,
+driver/rider). All devices share one system image, so each extra device only
+adds its own data (~2 GB) and uses its RAM while running.
+
+```bash
+npx expoemu device create tablet --profile tablet
+npx expoemu device create small  --profile small
+npx expoemu devices                          # list devices + which are running
+
+npx expoemu up                               # default phone, container, Metro, app
+npx expoemu emulator start --device tablet   # boots next to the phone
+npx expoemu emulator start --device small
+npx expoemu open --all                       # open the app on every running device
+
+npx expoemu fill "Email" "a@x.com" --device tablet   # any command, one device
+npx expoemu tap-text "Send" --device small
+npx expoemu screenshot --all                 # one PNG per device
+npx expoemu emulator stop --device small     # stop one; `down` stops all
+```
+
+| Profile | Hardware | Screen | RAM |
+|---------|----------|--------|-----|
+| `phone` (default) | Pixel 8 | 1080×2400 @420 dpi | 4 GB |
+| `small` | small phone | 720×1600 @320 dpi | 2 GB |
+| `large` | Pixel 9 Pro XL | 1344×2992 @480 dpi | 4 GB |
+| `tablet` | Pixel Tablet | 2560×1600 @320 dpi | 4 GB |
+| `foldable` | Pixel Fold (unfolded) | 2208×1840 @420 dpi | 4 GB |
+
+- **Choosing the device:** without `--device`, commands use the default phone
+  (also called `default`). `--device` takes a device name or a serial such as
+  `emulator-5556`. For `adb`, `shell` and `expo`, put `--device` before the
+  command (`npx expoemu --device tablet adb …`), so their own flags pass
+  through.
+- **Shared Metro:** one Metro serves every device. Each device runs its own
+  copy of the app with its own state.
+- **Capacity:** three running devices use about 10 GB of RAM. A Mac with
+  16 GB comfortably runs two.
+
 ## Optional: using Kiri instead of Docker Desktop
 
 [Kiri](https://runkiri.com) is a small, fast container runtime that speaks

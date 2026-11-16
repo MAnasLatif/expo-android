@@ -6,6 +6,15 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Several emulators at once. Named devices come from profiles (`phone`,
+  `small`, `large`, `tablet`, `foldable`) via `device create`, and `devices`
+  lists them. `emulator start|stop --device NAME` runs them side by side. A
+  global `--device NAME` targets any command at one device. `open --all`
+  and `screenshot --all` cover every running device, all served by one
+  Metro.
+
 ### Changed
 
 - Install once, test every project. The first-run dependency install uses the
