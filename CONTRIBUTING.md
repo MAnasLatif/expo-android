@@ -120,8 +120,11 @@ hand or a re-run, it skips the npm step and only creates the missing GitHub
 Release. A failed release publishes nothing. Delete the tag (`git push --delete origin vX.Y.Z`),
 fix the problem, and tag again.
 
-Before tagging, move the **Unreleased** notes in `CHANGELOG.md` under the new
-version and commit.
+After a successful release, the workflow commits `chore(release): X.Y.Z` to
+`main`. It sets `package.json` to the tag's version (only when newer, so
+tagging an old commit never moves it backwards). For stable versions it also
+moves the **Unreleased** notes in `CHANGELOG.md` under the new version. Keep
+writing changes under **Unreleased** and pull after releasing.
 
 ## Linting
 

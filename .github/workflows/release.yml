@@ -1,11 +1,14 @@
 # =============================================================================
 # Release: push a version tag on ANY commit → publish `expoemu` to npm and create
-# a GitHub Release. The tag decides the version; package.json is not edited.
+# a GitHub Release. The tag decides the version (no need to edit package.json first).
 #
 #   git tag v0.1.0 && git push origin v0.1.0          → expoemu@0.1.0       (npm tag: latest)
 #   git tag v0.2.0-beta.1 && git push origin v0.2.0-beta.1
 #                                                     → expoemu@0.2.0-beta.1 (npm tag: beta)
 #   v1.0.0-rc.2 → rc, v1.0.0-alpha.1 → alpha, v1.0.0-next.3 → next
+#
+#   Afterwards package.json on main is set to the tag's version automatically
+#   (job sync-version), so it never needs editing by hand.
 #
 #   Users install a pre-release with:  npx expoemu@beta …   /  npm i -D expoemu@beta
 #
@@ -142,3 +145,41 @@ jobs:
             echo "- Install: \`npm i -D expoemu@${{ steps.v.outputs.version }}\`"
             echo "- https://www.npmjs.com/package/expoemu/v/${{ steps.v.outputs.version }}"
           } >> "$GITHUB_STEP_SUMMARY"
+
+  # After a successful release, the tag's version becomes the project version
+  # on main: package.json "version" (only if newer) and, for stable versions,
+  # the CHANGELOG "Unreleased" notes move under the new version heading.
+  # Committed by github-actions[bot] as "chore(release): X.Y.Z".
+  sync-version:
+    name: Set package.json to the released version
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Update package.json and CHANGELOG
+        id: sync
+        run: echo "result=$(node .github/scripts/sync-version.js "$GITHUB_REF_NAME")" >> "$GITHUB_OUTPUT"
+
+      - name: Commit to main
+        if: steps.sync.outputs.result == 'changed'
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json CHANGELOG.md
+          git commit -m "chore(release): $version"
+          # main may have moved since checkout: rebase and retry.
+          for _ in 1 2 3; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+          done
+          echo "::error::Could not push the version bump to main"
+          exit 1
