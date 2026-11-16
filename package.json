@@ -32,6 +32,7 @@
     "scripts/",
     "docker/",
     "config/",
+    "server/dist/",
     "docs/AGENTS.md",
     "Dockerfile",
     "docker-compose.yml",

@@ -100,16 +100,27 @@ jobs:
         run: npm test
 
       - name: Lint shell scripts
-        run: shellcheck -x -S warning scripts/*.sh scripts/lib/*.sh docker/*.sh
+        run: shellcheck -x -S warning scripts/*.sh scripts/lib/*.sh docker/*.sh server/*.sh
 
       - name: Pinned versions in sync
         run: scripts/check-versions.sh --verify-sync
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # Shipped inside the package; the runner's Android SDK gets the pinned
+      # build-tools/platform.
+      - name: Build UI server APK
+        run: server/build.sh
 
       - name: Build package tarball
         id: pack
         run: |
           file="$(npm pack --silent)"
           tar -tzf "$file" | grep -q 'package/scripts/lib/common.sh'
+          tar -tzf "$file" | grep -qx 'package/server/dist/expoemu-server.apk' || { echo "::error::UI server APK missing from the package"; exit 1; }
           if tar -tzf "$file" | grep -qx 'package/.env'; then echo "::error::.env must never be published"; exit 1; fi
           echo "file=$file" >> "$GITHUB_OUTPUT"
 

@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: ShellCheck
-        run: shellcheck -x -S warning scripts/*.sh scripts/lib/*.sh docker/*.sh
+        run: shellcheck -x -S warning scripts/*.sh scripts/lib/*.sh docker/*.sh server/*.sh
 
   # npm package: CLI unit tests + the tarball ships what the scripts need.
   cli:
@@ -25,12 +25,19 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
       - name: Unit tests
         run: npm test
+      # The runner's Android SDK gets the pinned build-tools/platform.
+      - name: Build UI server APK
+        run: server/build.sh
       - name: Package contents
         run: |
           npm pack --dry-run --json > pack.json
-          for f in bin/expoemu.js scripts/lib/common.sh Dockerfile docker-compose.yml config/versions.env docker/entrypoint.sh .env.example; do
+          for f in bin/expoemu.js scripts/lib/common.sh scripts/lib/ui-server.sh Dockerfile docker-compose.yml config/versions.env docker/entrypoint.sh .env.example server/dist/expoemu-server.apk server/dist/version.txt; do
             grep -q "\"path\": \"$f\"" pack.json || { echo "missing from package: $f"; exit 1; }
           done
           if grep -q '"path": ".env"' pack.json; then echo ".env must never be published"; exit 1; fi

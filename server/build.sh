@@ -53,7 +53,8 @@ if [ ! -x "$BT/aapt2" ] || [ ! -f "$JAR" ]; then
 fi
 
 # --- Version: hash of the sources, so any change reinstalls on devices -------
-VERSION="$(cat "$HERE/AndroidManifest.xml" "$HERE"/src/dev/expoemu/server/*.java | sha1sum | cut -c1-12)"
+sha1() { if command -v sha1sum >/dev/null 2>&1; then sha1sum; else shasum -a 1; fi; }
+VERSION="$(cat "$HERE/AndroidManifest.xml" "$HERE"/src/dev/expoemu/server/*.java | sha1 | cut -c1-12)"
 
 OUT="$HERE/dist"
 WORK="$(mktemp -d)"
@@ -65,10 +66,10 @@ echo "==> Building expoemu UI server $VERSION"
   --manifest "$HERE/AndroidManifest.xml" \
   --min-sdk-version 24 --target-sdk-version 36 \
   --version-code 1 --version-name "$VERSION"
-javac -nowarn --release 11 -classpath "$JAR" -d "$WORK/classes" \
-  $(find "$HERE/src" -name '*.java')
-"$BT/d8" --release --min-api 24 --lib "$JAR" --output "$WORK/dex" \
-  $(find "$WORK/classes" -name '*.class')
+sources=(); while IFS= read -r -d '' f; do sources+=("$f"); done < <(find "$HERE/src" -name '*.java' -print0)
+javac -nowarn --release 11 -classpath "$JAR" -d "$WORK/classes" "${sources[@]}"
+classes=(); while IFS= read -r -d '' f; do classes+=("$f"); done < <(find "$WORK/classes" -name '*.class' -print0)
+"$BT/d8" --release --min-api 24 --lib "$JAR" --output "$WORK/dex" "${classes[@]}"
 ( cd "$WORK/dex" && jar uf "$WORK/base.apk" classes.dex )
 "$BT/zipalign" -f -p 4 "$WORK/base.apk" "$WORK/aligned.apk"
 "$BT/apksigner" sign --ks "$HERE/expoemu-debug.keystore" \
