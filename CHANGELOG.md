@@ -6,6 +6,14 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Agent Skill `expoemu` (`skills/expoemu`) for Claude Code, Cursor, Codex,
+  Copilot and other agents. Install with `npx skills add MAnasLatif/expoemu`.
+  It includes SKILL.md (workflow, selectors, gotchas), references (all
+  commands, recipes, troubleshooting) and evals. CI checks it against the
+  Agent Skills spec and the real CLI commands.
+
 ## [0.2.0] - 2026-11-16
 
 ### Added

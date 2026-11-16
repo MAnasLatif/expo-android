@@ -5,9 +5,15 @@ and the people who use them. Everything is a plain `npx expoemu …` command run
 from the Expo project folder. expoemu installs no plugin or MCP server and
 changes no assistant configuration.
 
-> **Tip for users:** copy the "Snippet for your project" section below into your
-> Expo project's `CLAUDE.md` / `AGENTS.md`. Adding expoemu as a devDependency
-> (`npm i -D expoemu`) pins the version, and `npx` won't ask to install.
+> **Recommended: install the skill.** `npx skills add MAnasLatif/expoemu` puts
+> the [expoemu Agent Skill](../skills/expoemu/SKILL.md) into your project for
+> Claude Code, Cursor, Codex, Copilot and others. Then add one line to
+> `AGENTS.md` / `CLAUDE.md`: *"Use the `expoemu` skill to run, test and debug
+> this app on Android."* The skill contains everything below and more.
+>
+> **Without the skill:** copy the "Snippet for your project" section below into
+> your Expo project's `CLAUDE.md` / `AGENTS.md`. Adding expoemu as a
+> devDependency (`npm i -D expoemu`) pins the version, and `npx` won't ask to install.
 
 ## Prerequisites (done once by a human)
 

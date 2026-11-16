@@ -15,8 +15,9 @@ npx expoemu up    # phone boots, Metro starts, your app opens
 - 🐳 **Toolchain in Docker:** JDK 17, Node.js, Bun, Expo CLI, Metro, adb
 - 📱 **Native emulator on macOS:** Google's Android Emulator with an Android
   16 (API 36) Pixel device, hardware-accelerated by Hypervisor.framework
-- 🤖 **AI-assistant ready:** `npx expoemu screenshot`, `ui`, `tap-text`,
-  `logcat`… let Claude Code or any AI agent test your app from the terminal
+- 🤖 **AI-assistant ready:** one command (`npx skills add MAnasLatif/expoemu`)
+  gives Claude Code, Cursor, Codex & co. an [Agent Skill](#ai-assistant-skill-let-your-agent-test-the-app)
+  to run, inspect, tap through and verify your app on their own
 - 🧹 **Clean host:** everything on macOS lives in `~/.expoemu` and is
   removed with one command
 - 📌 **Reproducible:** every download is version-pinned and checksum-verified
@@ -169,22 +170,68 @@ Prefix every command with `npx expoemu`, e.g. `npx expoemu scroll-to "Row 30"`.
 App commands target Expo Go unless you set `APP_PACKAGE`. Run
 `npx expoemu help` for the full list.
 
-## Using it with Claude Code and other AI assistants
+## AI assistant skill: let your agent test the app
 
-An assistant working in your project only needs `npx expoemu` commands:
+expoemu ships an [Agent Skill](https://agentskills.io) that teaches your coding
+agent (Claude Code, Cursor, Codex, GitHub Copilot, Gemini CLI, Windsurf, Cline,
+OpenCode and [others](https://www.skills.sh/)) everything about expoemu: every
+command, the test workflow, selectors, multi-device testing and fixes for
+common problems. With it, the agent can run your app, look at the screen, tap
+through flows, check the result and read the logs on its own.
+
+**1. Add the skill to your project** (from the project folder):
 
 ```bash
-npx expoemu status                      # is everything running?
-npx expoemu screenshot home             # → prints the PNG path to read
-npx expoemu ui                          # elements + tap coordinates
-npx expoemu tap-text "Sign in"
-npx expoemu logcat --errors -n 50
+npx skills add MAnasLatif/expoemu
 ```
 
-[docs/AGENTS.md](docs/AGENTS.md) has a snippet for your project's
-`CLAUDE.md` / `AGENTS.md` and a recommended
-screenshot → inspect → interact loop. expoemu doesn't change any assistant's
-configuration.
+The [skills CLI](https://www.skills.sh/) detects your agents and installs the
+skill into each one's folder (`.claude/skills/`, `.agents/skills/`, …). Commit
+those files so your team and CI agents get the skill too. Useful options:
+`-a claude-code` for one agent only, `-g` to install it for all your projects.
+Run `npx skills update` later for the latest version.
+
+**2. Mention it in your agent instructions.** Add this to `AGENTS.md`
+(or `CLAUDE.md`):
+
+```markdown
+## Android testing
+Use the `expoemu` skill to run, test and debug this app on Android.
+Always verify UI changes on the emulator (screenshot + wait-for/assert)
+before saying a task is done.
+```
+
+**3. Ask in plain language:**
+
+- "Run the app on Android and show me the home screen."
+- "Test sign-in with a wrong password and tell me what error appears."
+- "Check the settings screen on a phone and a tablet."
+- "What happens when the user is offline?"
+
+The agent picks the right commands, such as `npx expoemu up`, `screenshot`,
+`fill`, `tap-text`, `wait-for` and `logcat`, and reads the screenshots it
+takes. Setup (`npx expoemu setup`) still needs one approval from you, because
+it accepts the Android SDK license and downloads about 8 GB.
+
+<details>
+<summary>What the skill contains</summary>
+
+| File | Purpose |
+|------|---------|
+| [`SKILL.md`](skills/expoemu/SKILL.md) | When to use expoemu, ground rules, the inspect → act → verify workflow, selectors, gotchas |
+| [`references/commands.md`](skills/expoemu/references/commands.md) | Every command and flag |
+| [`references/workflows.md`](skills/expoemu/references/workflows.md) | Recipes: forms, red screens, offline, dark mode, permissions, deep links, performance, multi-device |
+| [`references/troubleshooting.md`](skills/expoemu/references/troubleshooting.md) | Symptoms and fixes |
+| [`evals/evals.json`](skills/expoemu/evals/evals.json) | Scenarios to check an agent uses the skill correctly |
+
+The agent loads `SKILL.md` when a task matches and opens the references only
+when it needs them. The skill follows the Agent Skills spec, and CI checks
+that it stays in sync with the CLI's commands.
+
+</details>
+
+Without the skill, any agent can still use expoemu. Every action is a plain
+`npx expoemu …` command. See [docs/AGENTS.md](docs/AGENTS.md).
 
 ## Configuration
 

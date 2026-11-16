@@ -126,6 +126,25 @@ tagging an old commit never moves it backwards). For stable versions it also
 moves the **Unreleased** notes in `CHANGELOG.md` under the new version. Keep
 writing changes under **Unreleased** and pull after releasing.
 
+## Updating the Agent Skill
+
+The [`skills/expoemu`](skills/expoemu) skill is what AI agents learn expoemu
+from (`npx skills add MAnasLatif/expoemu`). When you add or change a command:
+
+- Document it in `skills/expoemu/references/commands.md`. CI fails if a CLI
+  command is missing there, or if the skill mentions a command that doesn't
+  exist.
+- If it changes how agents should work, update `SKILL.md`. Keep it under 500
+  lines and keep details in `references/`.
+- Bump `metadata.version` in the SKILL.md frontmatter, and add or adjust a
+  scenario in `evals/evals.json` for new behaviour.
+- Test the install locally:
+  `npx skills add /path/to/expoemu --skill expoemu -a claude-code`.
+
+The skill follows the [Agent Skills spec](https://agentskills.io/specification)
+and [skills.sh](https://www.skills.sh/) conventions. It is listed on skills.sh
+automatically once people install it.
+
 ## Linting
 
 CI runs [ShellCheck](https://www.shellcheck.net/) and a Docker build. To run
