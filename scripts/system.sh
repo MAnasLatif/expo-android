@@ -21,6 +21,12 @@
 #   location LAT LON                   set GPS position (e.g. 37.422 -122.084)
 #   battery LEVEL|unplug|charge|reset|status
 #   notifications open|close|settings  pull down the shade / quick settings
+#   sms NUMBER "text"                  receive an SMS (e.g. OTP codes)
+#   call NUMBER | call accept|end NUMBER   incoming phone call
+#   biometric enroll [--pin 1234]      add a fingerprint (sets a test PIN first)
+#   biometric touch | fail             matching / non-matching finger on the sensor
+#   biometric status | reset           enrolled? / remove PIN + fingerprints
+#   (sms, call, biometric and location need an emulator)
 #
 # APP CONTEXT (default package: APP_PACKAGE, i.e. Expo Go)
 #   permission grant|revoke PERM [PKG] e.g. CAMERA, ACCESS_FINE_LOCATION,
@@ -127,6 +133,7 @@ case "$cmd" in
 
   # --- Sensors & device ---------------------------------------------------------
   location)
+    is_emulator || die "location needs an emulator (phones use their real GPS)"
     [ $# -eq 2 ] || die "usage: location LAT LON   (e.g. location 37.422 -122.084)"
     # The emulator console takes longitude first.
     adb_host emu geo fix "$2" "$1" >/dev/null || die "Failed to set location"
@@ -146,6 +153,77 @@ case "$cmd" in
       settings) sh cmd statusbar expand-settings ;;
       close)    sh cmd statusbar collapse ;;
       *) die "usage: notifications open|close|settings" ;;
+    esac ;;
+
+  # --- Telephony & biometrics (emulator console) --------------------------------
+  sms)
+    is_emulator || die "sms needs an emulator"
+    [ $# -ge 2 ] || die "usage: sms NUMBER \"text\"   (e.g. sms 5551234 \"Your code is 482913\")"
+    num="$1"; shift
+    [[ "$(adb_host emu sms send "$num" "$*" 2>&1)" == *OK* ]] || die "Emulator rejected the SMS"
+    ok "SMS from $num delivered: $*" ;;
+  call)
+    is_emulator || die "call needs an emulator"
+    case "${1:-}" in
+      accept|end)
+        [ -n "${2:-}" ] || die "usage: call $1 NUMBER"
+        verb=accept; [ "$1" = end ] && verb=cancel
+        [[ "$(adb_host emu gsm "$verb" "$2" 2>&1)" == *OK* ]] || die "No call from $2 to $1"
+        if [ "$1" = end ]; then ok "Call from $2 ended"; else ok "Call from $2 answered"; fi ;;
+      ""|-*) die "usage: call NUMBER | call accept NUMBER | call end NUMBER" ;;
+      *)
+        [[ "$(adb_host emu gsm call "$1" 2>&1)" == *OK* ]] || die "Emulator rejected the call"
+        ok "Incoming call from $1 — end it with: $(cmd system.sh | sed 's/ help$//') call end $1" ;;
+    esac ;;
+  biometric)
+    is_emulator || die "biometric needs an emulator"
+    device="$(dirname "$0")/device.sh"
+    on_screen() { EXPOEMU_DEVICE="$ANDROID_SERIAL" bash "$device" find "$1" >/dev/null 2>&1; }
+    tap_on() { EXPOEMU_DEVICE="$ANDROID_SERIAL" bash "$device" tap-text "$1" >/dev/null 2>&1; }
+    enrolled() { [[ "$(get dumpsys fingerprint)" =~ \"count\":[1-9] ]]; }
+    case "${1:-status}" in
+      touch) adb_host emu finger touch 1 >/dev/null; sleep 0.3; adb_host emu finger remove 1 >/dev/null 2>&1 || true
+             ok "Enrolled finger touched the sensor (should authenticate)" ;;
+      fail)  adb_host emu finger touch 9 >/dev/null; sleep 0.3; adb_host emu finger remove 9 >/dev/null 2>&1 || true
+             ok "Unknown finger touched the sensor (should be rejected)" ;;
+      status) if enrolled; then echo "fingerprint: enrolled"; else echo "fingerprint: none (run: biometric enroll)"; fi ;;
+      enroll)
+        pin="${EXPOEMU_PIN:-1234}"; [ "${2:-}" = --pin ] && pin="${3:-}"
+        [[ "$pin" =~ ^[0-9]{4,16}$ ]] || die "PIN must be 4-16 digits"
+        if enrolled; then ok "A fingerprint is already enrolled"; exit 0; fi
+        # 1. Fingerprints need a screen lock: set our test PIN (or use --pin).
+        if [[ "$(get locksettings set-pin "$pin")" == *"set to"* ]]; then
+          echo "$pin" > "$(pin_file)"
+          info "Screen lock PIN set to $pin (used by unlock; remove with: biometric reset)"
+        elif [ "${2:-}" = --pin ]; then
+          echo "$pin" > "$(pin_file)"
+        else
+          die "This device already has a screen lock. Re-run with its PIN: biometric enroll --pin XXXX"
+        fi
+        # 2. Walk through Settings' enrollment: PIN, consent, sensor, done.
+        sh am start -a android.settings.FINGERPRINT_ENROLL >/dev/null
+        sleep 3
+        sh input text "$pin"; sh input keyevent KEYCODE_ENTER; sleep 3
+        for _ in 1 2 3 4 5; do
+          if on_screen "I agree"; then tap_on "I agree" || true; sleep 2; break; fi
+          tap_on "More" || true; sleep 1   # under set -e a missing button must not abort
+        done
+        for _ in $(seq 1 15); do
+          adb_host emu finger touch 1 >/dev/null; sleep 1
+          adb_host emu finger remove 1 >/dev/null 2>&1 || true; sleep 1
+          if on_screen "Fingerprint added"; then break; fi
+        done
+        tap_on "Done" || true
+        sh input keyevent KEYCODE_HOME
+        enrolled || die "Enrollment did not complete — finish it in Settings > Security > Fingerprint, then use: biometric touch"
+        ok "Fingerprint enrolled — use 'biometric touch' (match) and 'biometric fail' (no match)" ;;
+      reset)
+        pf="$(pin_file)"
+        [ -f "$pf" ] || die "No PIN set by expoemu on this device (nothing to reset)"
+        [[ "$(get locksettings clear --old "$(cat "$pf")")" == *[Cc]lear* ]] || die "Could not remove the screen lock"
+        rm -f "$pf"
+        ok "Screen lock and fingerprints removed" ;;
+      *) die "usage: biometric enroll [--pin N]|touch|fail|status|reset" ;;
     esac ;;
 
   # --- App context -----------------------------------------------------------------

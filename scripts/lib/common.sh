@@ -369,6 +369,21 @@ require_device() {
 # True when the target is an emulator (some commands need the emulator console).
 is_emulator() { [[ "${1:-$ANDROID_SERIAL}" == emulator-* ]]; }
 
+# True while the lock screen is showing on the target device.
+keyguard_showing() {
+  local out
+  out="$(adb_host shell dumpsys window 2>/dev/null)"
+  [[ "$out" == *"isKeyguardShowing=true"* ]]
+}
+
+# PIN that `biometric enroll` set on an emulator (fingerprints need a screen
+# lock). Stored per AVD so `unlock` can get past it. Test PIN, not a secret.
+pin_file() {
+  local avd
+  avd="$(adb_host emu avd name 2>/dev/null | tr -d '\r' | awk 'NR == 1')"
+  printf '%s/pin-%s\n' "$RUN_DIR" "${avd:-$ANDROID_SERIAL}"
+}
+
 # --- Device profiles and AVD creation --------------------------------------------
 PROFILES="phone small large tablet foldable"
 # profile -> "<hw.device.name> <width> <height> <density> <ram MB>"

@@ -123,6 +123,11 @@ All reversible. Reset what you change.
 | `location LAT LON` | GPS position, e.g. `location 37.422 -122.084`. |
 | `battery LEVEL\|unplug\|charge\|reset\|status` | Fake battery level / charging. |
 | `notifications open\|close\|settings` | Notification shade / quick settings. |
+| `sms NUMBER "text"` | Receive an SMS, e.g. an OTP code (emulators). |
+| `call NUMBER` · `call accept NUMBER` · `call end NUMBER` | Incoming phone call: ring, answer, hang up (emulators). |
+| `biometric enroll [--pin N]` | Add a fingerprint. Sets a test screen-lock PIN (default 1234) first; `unlock` types it. |
+| `biometric touch` · `biometric fail` | Matching / non-matching finger on the sensor, for login prompts and the lock screen. |
+| `biometric status` · `biometric reset` | Is a fingerprint enrolled? / remove the PIN and fingerprints. |
 | `permission grant\|revoke PERM [PKG]` · `permission list [PKG]` | Runtime permissions, e.g. `CAMERA`, `ACCESS_FINE_LOCATION`, `POST_NOTIFICATIONS`, `RECORD_AUDIO`. |
 | `locale TAG\|reset\|status [PKG]` | Per-app language (`ar`, `fr-FR`, `ja`); reopen the app (`open`) to apply. |
 | `info` | Device summary: model, API, screen, theme, battery, network, app locale. |

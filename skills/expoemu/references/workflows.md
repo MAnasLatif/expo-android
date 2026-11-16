@@ -12,6 +12,7 @@ exits 0 (run `expoemu up --no-animations` first if it doesn't).
 - [Start from a fresh install](#start-from-a-fresh-install)
 - [Offline and flaky network](#offline-and-flaky-network) (incl. slow 2G/3G)
 - [Dark mode, large text, rotation, RTL](#dark-mode-large-text-rotation-rtl)
+- [OTP codes, calls and fingerprint login](#otp-codes-calls-and-fingerprint-login)
 - [Permissions](#permissions)
 - [Deep links](#deep-links)
 - [Performance check](#performance-check)
@@ -108,6 +109,30 @@ expoemu locale reset && expoemu open
 ```
 
 Rotation does nothing if `app.json` sets `"orientation": "portrait"`.
+
+## OTP codes, calls and fingerprint login
+
+```bash
+# SMS one-time code
+expoemu tap-text "Send code"
+expoemu sms 5551234 "Your verification code is 482913"
+expoemu fill "Code" "482913"              # or check the app auto-reads it
+
+# Incoming call while the app is open (interruption handling)
+expoemu call 5559876
+expoemu screenshot during-call
+expoemu call end 5559876
+
+# Fingerprint (expo-local-authentication)
+expoemu biometric enroll                  # once per device; sets test PIN 1234
+expoemu tap-text "Log in with fingerprint"
+expoemu biometric fail                    # wrong finger → error state
+expoemu biometric touch                   # right finger → success
+expoemu wait-for "Welcome"
+expoemu biometric reset                   # remove PIN + fingerprint when done
+```
+
+These need an emulator; on a physical phone use the real SIM and sensor.
 
 ## Permissions
 

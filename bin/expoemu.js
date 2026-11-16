@@ -36,6 +36,7 @@ const DEVICE_CMDS = [ // scripts/device.sh — touch, elements, waits, keys
 const SYSTEM_CMDS = [ // scripts/system.sh — device state, capture, info
   'rotate', 'dark-mode', 'font-scale', 'animations', 'network', 'airplane',
   'location', 'battery', 'notifications', 'permission', 'locale', 'record', 'info',
+  'sms', 'call', 'biometric',
 ];
 const APP_CMDS = ['app', 'crash', 'perf', 'memory']; // scripts/app.sh
 
@@ -118,6 +119,8 @@ DEVICE STATE
   animations on|off | network on|off | airplane on|off
   location LAT LON | battery LEVEL|unplug|charge|reset
   notifications open|close|settings
+  sms NUMBER "text" | call NUMBER | call accept|end NUMBER
+  biometric enroll|touch|fail|status|reset   fingerprint (emulators)
   permission grant|revoke|list [PERM] [PKG] | locale TAG|reset [PKG]
   info                              device summary
 

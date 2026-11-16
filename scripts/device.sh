@@ -273,7 +273,15 @@ case "$cmd" in
   recents)    sh input keyevent KEYCODE_APP_SWITCH ;;
   enter)      sh input keyevent KEYCODE_ENTER ;;
   lock)       sh input keyevent KEYCODE_SLEEP ;;
-  unlock)     sh input keyevent KEYCODE_WAKEUP; sh wm dismiss-keyguard ;;
+  unlock)
+    sh input keyevent KEYCODE_WAKEUP; sh wm dismiss-keyguard
+    sleep 1
+    # A PIN set by `biometric enroll`: type it (swipe-only locks are already gone).
+    if keyguard_showing && [ -f "$(pin_file)" ]; then
+      sh input text "$(cat "$(pin_file)")"; sh input keyevent KEYCODE_ENTER; sleep 1
+    fi
+    if keyguard_showing; then die "Still locked — the screen lock needs a PIN/password expoemu doesn't know"; fi
+    ok "Unlocked" ;;
 
   # --- Expo / app ---------------------------------------------------------------
   logcat)

@@ -163,6 +163,8 @@ wins over a partial one.
 | `network edge\|3g\|4g\|gprs\|full` | Slow network: real speed + latency limits (`full` = back to normal) |
 | `location 37.42 -122.08` · `battery 15\|unplug\|charge\|reset` | Sensors |
 | `notifications open\|close\|settings` | Notification shade, quick settings |
+| `sms 5551234 "Code 482913"` · `call 5551234` / `call end 5551234` | Incoming SMS (OTP flows) and phone calls |
+| `biometric enroll` · `biometric touch\|fail` · `biometric reset` | Fingerprint login: enroll once, then simulate a matching or wrong finger |
 | `permission grant\|revoke\|list [PERM]` | Runtime permissions, e.g. `permission grant CAMERA` |
 | `locale ar\|fr-FR\|reset` | Per-app language (reopen the app to apply) |
 | `info` | Device summary |

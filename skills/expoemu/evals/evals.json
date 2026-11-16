@@ -71,6 +71,24 @@
         "Runs `expoemu down` (keeps image, caches and devices)",
         "Does NOT run `cleanup` or delete devices without asking"
       ]
+    },
+    {
+      "id": 9,
+      "prompt": "Test that fingerprint login works and that a wrong finger shows an error.",
+      "expected_behavior": [
+        "Runs `expoemu biometric status` and `expoemu biometric enroll` only if no fingerprint is enrolled",
+        "Triggers the app prompt, then uses `expoemu biometric fail` and checks the error with `wait-for`",
+        "Uses `expoemu biometric touch` and verifies success; offers `expoemu biometric reset` afterwards"
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "How does the feed screen behave on a slow 2G/3G connection?",
+      "expected_behavior": [
+        "Uses `expoemu network edge` (or gprs/3g), not `network off`",
+        "Captures loading states with screenshots and waits with generous timeouts",
+        "Restores with `expoemu network full` afterwards"
+      ]
     }
   ]
 }
