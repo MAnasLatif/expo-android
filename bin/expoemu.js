@@ -52,6 +52,8 @@ const COMMANDS = {
   cleanup:          { script: 'cleanup.sh' },
   'check-versions': { script: 'check-versions.sh' },
   down:             { script: 'stop.sh', prefix: ['--all'] },
+  devices:          { script: 'devices.sh', prefix: ['list'] },
+  device:           { script: 'devices.sh' },   // device create|delete|profiles|list
 };
 for (const c of DEVICE_CMDS) COMMANDS[c] = { script: 'device.sh', prefix: [c] };
 for (const c of SYSTEM_CMDS) COMMANDS[c] = { script: 'system.sh', prefix: [c] };
@@ -66,17 +68,26 @@ Docker. Run commands from your Expo project folder.
 SETUP & LIFECYCLE
   setup [--runtime docker|kiri] [--accept-licenses]   one-time install
   up [--headless] [--no-animations] [--cold-boot]     phone + container + Metro + open app
-  down                                                stop container, emulator, adb
+  down                                                stop container, all emulators, adb
   status | doctor                                     health check (exit 1 if broken)
-  emulator start|stop [flags]                         only the phone
+  emulator start|stop [--device NAME] [flags]         only the phone(s); stop = all
   start | stop                                        only the container
   expo [--background|--logs|--stop] [expo args]       Metro bundler
-  open [--reinstall]                                  install Expo Go if needed, open app
+  open [--all] [--reinstall]                          install Expo Go if needed, open app
   shell [cmd…]                                        shell / command inside the container
-  cleanup --project|--caches|--image|--sdk|--all      scoped removal (asks first)
+  cleanup --project|--caches|--image|--sdk|--all|--legacy   scoped removal (asks first)
+
+SEVERAL DEVICES AT ONCE
+  devices                           list devices and which are running
+  device create NAME [--profile phone|small|large|tablet|foldable]
+  device delete NAME | device profiles
+  --device NAME (or -d NAME)        target a device with ANY command, e.g.
+                                    expoemu emulator start --device tablet
+                                    expoemu tap-text "Login" --device tablet
+  open --all | screenshot --all     every running device
 
 SEE THE SCREEN
-  screenshot [name]                 PNG in ./.android-screenshots, prints its path
+  screenshot [--all] [name]         PNG in ./.android-screenshots, prints its path
   record [SECONDS] [name]           MP4 screen recording (max 180 s)
   ui [--xml]                        elements with tap coordinates (or raw XML)
   texts                             visible text only
@@ -157,8 +168,37 @@ function up(args) {
   return 0;
 }
 
+// Commands whose arguments belong to another tool (adb -d, a shell command, expo
+// flags): there, --device is only recognised BEFORE the command name.
+const PASSTHROUGH = new Set(['adb', 'shell', 'expo']);
+
+// Pull the global "--device NAME" / "-d NAME" / "--device=NAME" option out of
+// argv. Returns { device, rest }. The scripts read it as EXPOEMU_DEVICE.
+function extractDevice(argv) {
+  let device = null;
+  const rest = [];
+  let cmdSeen = false;
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
+    const allowed = !cmdSeen || !PASSTHROUGH.has(rest[0]);
+    if (allowed && (a === '--device' || a === '-d') && i + 1 < argv.length) {
+      device = argv[++i];
+      continue;
+    }
+    if (allowed && a.startsWith('--device=')) {
+      device = a.slice('--device='.length);
+      continue;
+    }
+    rest.push(a);
+    if (!a.startsWith('-')) cmdSeen = true;
+  }
+  return { device, rest };
+}
+
 function main(argv) {
-  const [cmd, ...args] = argv;
+  const { device, rest } = extractDevice(argv);
+  if (device) process.env.EXPOEMU_DEVICE = device;
+  const [cmd, ...args] = rest;
 
   if (!cmd || cmd === 'help' || cmd === '-h' || cmd === '--help') {
     console.log(HELP);
@@ -196,4 +236,4 @@ if (require.main === module) {
   process.exitCode = main(process.argv.slice(2));
 }
 
-module.exports = { COMMANDS, HELP, main };
+module.exports = { COMMANDS, HELP, main, extractDevice };

@@ -63,6 +63,23 @@ test('every routed command is handled by its script', () => {
   }
 });
 
+test('--device is extracted anywhere, but not from passthrough commands', () => {
+  const { extractDevice } = require('../bin/expoemu.js');
+  assert.deepStrictEqual(extractDevice(['tap-text', 'Login', '--device', 'tablet']),
+    { device: 'tablet', rest: ['tap-text', 'Login'] });
+  assert.deepStrictEqual(extractDevice(['-d', 'small', 'screenshot', 'home']),
+    { device: 'small', rest: ['screenshot', 'home'] });
+  assert.deepStrictEqual(extractDevice(['--device=tablet', 'ui']),
+    { device: 'tablet', rest: ['ui'] });
+  // adb's own -d (USB device) must reach adb untouched…
+  assert.deepStrictEqual(extractDevice(['adb', '-d', 'shell', 'ls']),
+    { device: null, rest: ['adb', '-d', 'shell', 'ls'] });
+  // …but a --device before the command still targets an emulator.
+  assert.deepStrictEqual(extractDevice(['--device', 'tablet', 'shell', 'ls', '-d', 'x']),
+    { device: 'tablet', rest: ['shell', 'ls', '-d', 'x'] });
+  assert.deepStrictEqual(extractDevice(['status']), { device: null, rest: ['status'] });
+});
+
 test('package "files" ships everything the scripts need at runtime', () => {
   for (const f of ['bin/', 'scripts/', 'docker/', 'config/', 'Dockerfile', 'docker-compose.yml', '.env.example']) {
     assert.ok(pkg.files.includes(f), `package.json files is missing ${f}`);
