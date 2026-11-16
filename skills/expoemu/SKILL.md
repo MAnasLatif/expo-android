@@ -131,6 +131,9 @@ expoemu run .expoemu/flows/login.flow --var EMAIL=test@example.com
 
 - If `.expoemu/flows/` exists, run it after your code changes to catch regressions.
 - After you verify a new flow by hand, offer to save it as a `.flow` file.
+- Visual checks: `expoemu compare NAME` against `.expoemu/baselines/NAME.png`
+  (exit 1 and a red-marked diff PNG on change). Only run
+  `expoemu baseline NAME --update` when the user confirms the change is intended.
 
 ## Several devices at once
 

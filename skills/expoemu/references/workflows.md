@@ -8,6 +8,7 @@ exits 0 (run `expoemu up --no-animations` first if it doesn't).
 - [Verify a code change](#verify-a-code-change)
 - [Test a form or login flow](#test-a-form-or-login-flow)
 - [Save a flow as a regression test](#save-a-flow-as-a-regression-test)
+- [Catch visual changes (screenshot baselines)](#catch-visual-changes-screenshot-baselines)
 - [Navigate long screens and lists](#navigate-long-screens-and-lists)
 - [Debug a red screen or crash](#debug-a-red-screen-or-crash)
 - [Start from a fresh install](#start-from-a-fresh-install)
@@ -78,6 +79,19 @@ expoemu run .expoemu/flows/login.flow --var EMAIL=test@example.com
 Read the printed report (`summary.md`). A failed flow has a failure
 screenshot and an error log next to it. Commit `.expoemu/flows/` so the
 team shares the tests.
+
+## Catch visual changes (screenshot baselines)
+
+```bash
+expoemu baseline settings                 # once, when the screen looks right (commit .expoemu/baselines/)
+# … change code …
+expoemu compare settings                  # exit 1 + diff image if more than 0.1 % of pixels changed
+expoemu compare settings --mask 900,320,1040,380 --threshold 0.5
+expoemu baseline settings --update        # accept an intended change
+```
+
+Read the diff PNG it prints: red pixels changed, blue areas were ignored (the
+status bar by default). In a flow, `compare NAME` works as a step.
 
 ## Navigate long screens and lists
 

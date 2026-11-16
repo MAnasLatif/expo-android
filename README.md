@@ -327,6 +327,31 @@ expoemu run --device tablet                   # same flows on another device
 - **Share them:** commit `.expoemu/flows/` so the team and AI assistants run
   the same tests.
 
+## Visual regression (screenshot baselines)
+
+Save how a screen should look, then catch unintended visual changes:
+
+```bash
+expoemu baseline settings            # saves .expoemu/baselines/settings.png (commit it)
+# … change code …
+expoemu compare settings             # ✓ 0.00% of pixels differ — or ✗ + a diff image, exit 1
+expoemu baseline settings --update   # accept an intended change
+```
+
+- **Diff image:** the diff PNG marks changed pixels in **red**. Ignored areas
+  are blue, and the status bar (clock, battery) is ignored by default.
+- **Tuning:** `--threshold 0.5` (% of pixels allowed to change, default 0.1),
+  `--tolerance 16` (colour noise), `--mask x1,y1,x2,y2` to ignore areas such
+  as animations or clocks.
+- **Several devices:** each device needs its own baselines. With
+  `--device tablet` they live in `.expoemu/baselines/tablet/`.
+- **Two files:** `expoemu compare before.png after.png` compares any two
+  screenshots.
+- **In flows:** `compare settings` works as a step, so flows can check how
+  screens look as well as what they say.
+
+No extra tools needed: images are compared with Node's built-in zlib.
+
 ## Several devices at once
 
 Test on a phone, a tablet and a small screen side by side, or run two or

@@ -42,7 +42,7 @@ const SYSTEM_CMDS = [ // scripts/system.sh — device state, capture, info
 const APP_CMDS = ['app', 'crash', 'perf', 'memory']; // scripts/app.sh
 
 // Commands implemented in Node rather than a script.
-const BUILTINS = ['up', 'emulator', 'run'];
+const BUILTINS = ['up', 'emulator', 'run', 'baseline', 'compare'];
 
 const COMMANDS = {
   setup:            { script: 'setup.sh' },
@@ -138,6 +138,11 @@ APP & DEBUGGING
 FLOWS (saved, repeatable tests)
   run [FILE|DIR…] [--var K=V] [--bail] [--report DIR]   run .flow files (default ./.expoemu/flows)
   run --init                                          create an example flow
+
+VISUAL REGRESSION
+  baseline NAME [--update]                            save the screen as .expoemu/baselines/NAME.png
+  compare NAME | compare A.png B.png                  % of pixels changed + diff image (exit 1 if over)
+      [--threshold 0.1] [--tolerance 16] [--mask x1,y1,x2,y2] [--include-status-bar]
 
 OTHER
   check-versions [--verify-sync]   compare pinned tool versions with upstream
@@ -274,6 +279,7 @@ function dispatch(argv) {
   }
   if (cmd === 'up') return up(args);
   if (cmd === 'run') return require('./flow.js').run(args, { bin: __filename });
+  if (cmd === 'baseline' || cmd === 'compare') return require('./visual.js').main(cmd, args, { bin: __filename });
   if (cmd === 'emulator') {
     const [sub, ...rest] = args;
     if (sub === 'start') return runScript('emulator-start.sh', rest);

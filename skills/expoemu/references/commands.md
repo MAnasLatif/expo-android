@@ -18,6 +18,7 @@ Add `--device NAME` (or `-d NAME`) to any command to target one device; for
 - [Device state](#device-state)
 - [App control and debugging](#app-control-and-debugging)
 - [Flows: saved tests](#flows-saved-tests)
+- [Visual regression](#visual-regression)
 - [Maintenance](#maintenance)
 - [Configuration](#configuration)
 
@@ -167,6 +168,19 @@ expanded. `setup`, `cleanup`, `install`, `uninstall`, `update`, `run` and
 `device` are not allowed in flows. Reports go to
 `.android-screenshots/runs/<time>/`: `summary.md`, `junit.xml` (CI) and
 `report.json`.
+
+## Visual regression
+
+| Command | What it does |
+|---------|--------------|
+| `baseline NAME [--update]` | Save the current screen as `.expoemu/baselines/NAME.png` (per device with `--device`: `.expoemu/baselines/DEVICE/NAME.png`). Refuses to overwrite without `--update`. |
+| `compare NAME` | Screenshot now and compare with the baseline. Prints the diff image path (red = changed, blue = ignored); exit 1 if more than `--threshold` % of pixels differ. |
+| `compare A.png B.png` | Compare two image files. |
+| options | `--threshold P` (default 0.1 %), `--tolerance N` per-channel noise (default 16), `--mask x1,y1,x2,y2` ignore an area (repeatable), `--include-status-bar` (ignored by default). |
+
+Screens from different devices have different sizes, so keep a baseline per
+device. Mask areas that change on their own, such as clocks, animations,
+random content, or Expo Go's floating "Tools" tooltip near the top right.
 
 ## Maintenance
 
