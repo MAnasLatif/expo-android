@@ -6,6 +6,21 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Saved test flows: `expoemu run` runs `.flow` files (one expoemu command
+  per line, with `${VAR}` / `--var`). Each failed flow saves a screenshot and
+  error log. Reports are written as `summary.md`, `junit.xml` and
+  `report.json`, and the exit code is 1 on failure. `run --init` creates an
+  example.
+- Visual regression: `expoemu baseline NAME` and `expoemu compare NAME` (or
+  two PNG files) report the % of pixels changed and write a red-marked diff
+  image. Thresholds, tolerance and masks can be tuned, and the status bar is
+  ignored by default. No extra dependencies.
+- [CI guide](docs/CI.md): headless runs on a self-hosted Mac runner, with an
+  example GitHub Actions workflow. Explains why GitHub-hosted macOS runners
+  can't run the emulator.
+
 ## [0.5.0] - 2026-11-16
 
 ### Added

@@ -326,6 +326,8 @@ expoemu run --device tablet                   # same flows on another device
   tools.
 - **Share them:** commit `.expoemu/flows/` so the team and AI assistants run
   the same tests.
+- **In CI:** run flows headless on a self-hosted Mac runner. See
+  [docs/CI.md](docs/CI.md) for an example workflow and what works where.
 
 ## Visual regression (screenshot baselines)
 
@@ -450,6 +452,7 @@ also run `node bin/expoemu.js <cmd>`.
 - [Architecture: how the pieces connect](docs/ARCHITECTURE.md)
 - [AI assistant guide](docs/AGENTS.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [CI and headless runs](docs/CI.md)
 
 ## Contributing
 

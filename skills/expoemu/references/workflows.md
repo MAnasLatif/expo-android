@@ -80,6 +80,10 @@ Read the printed report (`summary.md`). A failed flow has a failure
 screenshot and an error log next to it. Commit `.expoemu/flows/` so the
 team shares the tests.
 
+In CI the same flows run headless (`expoemu up --headless --no-animations`,
+then `expoemu run --report test-results`) on a self-hosted Mac runner. GitHub's
+hosted macOS runners can't run the emulator (no nested virtualization).
+
 ## Catch visual changes (screenshot baselines)
 
 ```bash
