@@ -51,10 +51,10 @@ stop_one() {
 
 # --- 1. Stop the requested device(s) ---------------------------------------------
 stopped=0
-while read -r serial name; do
+while read -r serial name <&3; do   # fd 3: adb inside must not eat the list
   [ -n "$serial" ] || continue
   if [ -z "$ONLY" ] || [ "$name" = "$ONLY" ]; then stop_one "$serial" "$name"; stopped=$((stopped + 1)); fi
-done < <(running_emulators)
+done 3< <(running_emulators)
 rm -f "$RUN_DIR/emulator.pid"   # pid file name used by older versions
 if [ "$stopped" = 0 ]; then
   if [ -n "$ONLY" ]; then ok "Device '$ONLY' was not running"; else ok "No emulator was running"; fi

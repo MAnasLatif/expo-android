@@ -314,6 +314,11 @@ expoemu emulator stop --device small     # stop one; `down` stops all
   copy of the app with its own state.
 - **Capacity:** three running devices use about 10 GB of RAM. A Mac with
   16 GB comfortably runs two.
+- **Real phones too:** plug in an Android phone with USB debugging on (or use
+  `expoemu adb connect <ip>:5555` over Wi-Fi). It appears in `expoemu devices`
+  under its model name (e.g. `pixel-7`), and every command works on it with
+  `--device pixel-7`. `open --all` and `screenshot --all` include it. Expo Go
+  is installed automatically and Metro is tunnelled over USB.
 
 ## Optional: using Kiri instead of Docker Desktop
 

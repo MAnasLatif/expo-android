@@ -30,7 +30,7 @@ metro_ready() {
 reverse_port() {
   [ -x "$ADB" ] || return 0
   local s
-  for s in $(running_emulators | awk '{print $1}'); do
+  for s in $(running_targets | awk '{print $1}'); do
     adb_host -s "$s" reverse "tcp:$METRO_PORT" "tcp:$METRO_PORT" >/dev/null 2>&1 || true
   done
 }

@@ -28,24 +28,27 @@ emus=""
 if [ -x "$ADB" ]; then
   if lsof -nP -iTCP:"$ADB_SERVER_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
     pass "adb server listening on 127.0.0.1:$ADB_SERVER_PORT"
-    emus="$(running_emulators)"
+    emus="$(running_targets)"
   else
     fail "adb server not running — $(cmd emulator-start.sh) starts it"
   fi
 fi
 # One block per running device (several can run at once).
-while read -r serial name; do
+# Read from fd 3: `adb shell` inside the loop would otherwise consume stdin
+# (the device list) and silently skip the remaining devices.
+while read -r serial name kind <&3; do
   [ -n "$serial" ] || continue
   api="$(adb_host -s "$serial" shell getprop ro.build.version.sdk 2>/dev/null | tr -d '\r')"
   booted="$(adb_host -s "$serial" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
-  if [ "$booted" = 1 ]; then pass "Device '$name': $serial (API $api, booted)"; else fail "Device '$name' ($serial) still booting"; fi
+  label=Device; [ "$kind" = usb ] && label=Phone
+  if [ "$booted" = 1 ]; then pass "$label '$name': $serial (API $api, booted)"; else fail "$label '$name' ($serial) still booting"; fi
   rev="$(adb_host -s "$serial" reverse --list 2>/dev/null || true)"
   if [[ "$rev" == *"tcp:$METRO_PORT"* ]]; then pass "  adb reverse tcp:$METRO_PORT active"
   else note "  adb reverse for Metro not set ($(cmd expo.sh) or $(cmd open-app.sh) set it)"; fi
   pkgs="$(adb_host -s "$serial" shell pm list packages host.exp.exponent 2>/dev/null || true)"
   if [[ "$pkgs" == *exponent* ]]; then pass "  Expo Go installed"
   else note "  Expo Go not installed yet ($(cmd open-app.sh) installs it)"; fi
-done <<<"$emus"
+done 3<<<"$emus"
 if [ -x "$ADB" ] && [ -z "$emus" ] && lsof -nP -iTCP:"$ADB_SERVER_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   fail "No emulator running — $(cmd emulator-start.sh)"
 fi

@@ -33,16 +33,16 @@ capture() {
 
 if [ "$ALL" = 1 ]; then
   require_sdk
-  emus="$(running_emulators)"
-  [ -n "$emus" ] || die "No running emulator. Start one with: $(cmd emulator-start.sh)"
-  while read -r s n; do capture "$s" "$n"; done <<<"$emus"
+  emus="$(running_targets)"
+  [ -n "$emus" ] || die "No running emulator or connected phone. Start one with: $(cmd emulator-start.sh)"
+  while read -r s n _ <&3; do capture "$s" "$n"; done 3<<<"$emus"   # fd 3: adb must not eat the list
 else
   require_device
   # Add the device name only when several devices are running (keeps the
   # single-device file names unchanged).
   device=""
-  if [ "$(running_emulators | wc -l | tr -d ' ')" -gt 1 ]; then
-    device="$(running_emulators | awk -v s="$ANDROID_SERIAL" '$1 == s { print $2 }')"
+  if [ "$(running_targets | wc -l | tr -d ' ')" -gt 1 ]; then
+    device="$(running_targets | awk -v s="$ANDROID_SERIAL" '$1 == s { print $2 }')"
   fi
   capture "$ANDROID_SERIAL" "$device"
 fi

@@ -38,7 +38,20 @@ case "$cmd" in
       if [ -n "$serial" ]; then status="running ($serial)"; else status=stopped; fi
       printf '%-20s %-9s %-12s %s\n' "$label" "$profile" "$screen" "$status"
     done < <(list_devices)
-    echo "* default device (also called \"default\")" ;;
+    echo "* default device (also called \"default\")"
+    # Physical phones on the same adb server (USB, or Wi-Fi via adb connect).
+    phones="$(running_targets 2>/dev/null | awk '$3 == "usb"' || true)"
+    blocked="$(blocked_targets 2>/dev/null || true)"
+    if [ -n "$phones$blocked" ]; then
+      echo
+      printf '%-20s %-22s %s\n' PHONE SERIAL STATUS
+      while read -r s n _; do
+        [ -n "$s" ] && printf '%-20s %-22s %s\n' "$n" "$s" "connected (use --device $n)"
+      done <<<"$phones"
+      while read -r s st; do
+        [ -n "$s" ] && printf '%-20s %-22s %s\n' "?" "$s" "$st — allow USB debugging on the phone"
+      done <<<"$blocked"
+    fi ;;
 
   profiles)
     printf '%-9s %-16s %s\n' PROFILE HARDWARE SCREEN

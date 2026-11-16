@@ -63,3 +63,5 @@ each failure. Find the symptom below.
 | `Device 'X' is not running` | `expoemu emulator start --device X` |
 | `--device` ignored with adb/shell/expo | Put it before the command: `expoemu --device X adb …`. |
 | Mac slows down | Each device uses 2–4 GB of RAM. Stop the unused ones: `expoemu emulator stop --device X`. |
+| Phone listed as `unauthorized` | On the phone, accept "Allow USB debugging" for this computer, then retry. |
+| Phone not listed at all | Enable Developer options → USB debugging, use a data USB cable, check `expoemu devices`. |

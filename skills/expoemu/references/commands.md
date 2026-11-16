@@ -52,7 +52,11 @@ Profiles: `phone` Pixel 8 1080×2400 (default) · `small` 720×1600, 2 GB ·
 `large` Pixel 9 Pro XL 1344×2992 · `tablet` Pixel Tablet 2560×1600 ·
 `foldable` Pixel Fold inner 2208×1840.
 
-`--device` accepts a device name, `default`, or a serial like `emulator-5556`.
+`--device` accepts a device name, `default`, a serial like `emulator-5556`, or a
+connected **physical phone** (USB, or Wi-Fi via `expoemu adb connect IP:5555`)
+by its model name from `expoemu devices` (e.g. `pixel-7`) or its serial. All
+commands work on phones, except emulator-only ones (`network` speed profiles,
+`sms`, `call`, `biometric`, `location`).
 
 ## See the screen
 

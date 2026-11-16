@@ -102,7 +102,7 @@ dismiss_intro() {
 
 if [ "$ALL" = 1 ]; then
   require_sdk
-  serials="$(running_emulators | awk '{print $1}')"
+  serials="$(running_targets | awk '{print $1}')"
   [ -n "$serials" ] || die "No running emulator. Start one with: $(cmd emulator-start.sh)"
   for s in $serials; do open_on "$s"; done
 else

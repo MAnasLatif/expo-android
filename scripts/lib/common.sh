@@ -313,33 +313,61 @@ running_emulators() {
   done
 }
 
-# Serial of the running emulator for device NAME (empty if not running).
+# Physical phones (USB, or Wi-Fi via `adb connect`) use the same adb server,
+# so everything that works on an emulator works on them too. Their name is
+# the model, e.g. "Pixel 7" -> "pixel-7".
+model_slug() { tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9\n' '-' | sed 's/--*/-/g; s/^-//; s/-$//'; }
+
+# One line per ready device of any kind: "<serial> <name> <emulator|usb>".
+running_targets() {
+  local s name
+  running_emulators | awk '{ print $1, $2, "emulator" }'
+  for s in $(adb_host devices 2>/dev/null | awk 'NR > 1 && $2 == "device" && $1 !~ /^emulator-[0-9]+$/ {print $1}'); do
+    name="$(adb_host -s "$s" shell getprop ro.product.model 2>/dev/null | tr -d '\r' | model_slug)"
+    printf '%s %s usb\n' "$s" "${name:-phone}"
+  done
+}
+
+# Phones that are plugged in but not usable yet: "<serial> <state>".
+blocked_targets() {
+  adb_host devices 2>/dev/null | awk 'NR > 1 && NF >= 2 && $2 != "device" { print $1, $2 }'
+}
+
+# Serial of the ready device called NAME (emulator AVD or phone model).
 serial_for_device() {
   local want
   want="$(device_name "$1")"
-  running_emulators | awk -v n="$want" '$2 == n && !f { print $1; f = 1 }'
+  running_targets | awk -v n="$want" '$2 == n && !f { print $1; f = 1 }'
 }
 
-# Pick the target emulator and export ANDROID_SERIAL for later adb calls.
-#   EXPOEMU_DEVICE=<name|serial>  -> that device
-#   otherwise                      -> the default device if running, else the first one
+# Pick the target device and export ANDROID_SERIAL for later adb calls.
+#   EXPOEMU_DEVICE=<name|serial>  -> that device (emulator or physical phone)
+#   otherwise -> the default emulator if running, else the first emulator,
+#                else the first connected phone
 require_device() {
   require_sdk
   local want="${EXPOEMU_DEVICE:-}" serial=""
   if [ -n "$want" ]; then
-    if [[ "$want" == emulator-* ]]; then
-      running_emulators | awk '{print $1}' | grep -qx "$want" && serial="$want"
-    else
-      serial="$(serial_for_device "$want")"
+    # An exact serial wins (emulator-5556, R5CT…, 192.168.1.5:5555).
+    serial="$(running_targets | awk -v s="$want" '$1 == s && !f { print $1; f = 1 }')"
+    [ -n "$serial" ] || serial="$(serial_for_device "$want")"
+    if [ -z "$serial" ]; then
+      if blocked_targets | awk '{print $1}' | grep -qx "$want"; then
+        die "Device '$want' is connected but $(blocked_targets | awk -v s="$want" '$1 == s {print $2}') — on the phone, allow USB debugging for this computer"
+      fi
+      die "Device '$want' is not running. Start it with: $(cmd emulator-start.sh) --device $want (or connect the phone)"
     fi
-    [ -n "$serial" ] || die "Device '$want' is not running. Start it with: $(cmd emulator-start.sh) --device $want"
   else
     serial="$(serial_for_device "$AVD_NAME")"
     [ -n "$serial" ] || serial="$(emulator_serial)"
-    [ -n "$serial" ] || die "No running emulator. Start one with: $(cmd emulator-start.sh)"
+    [ -n "$serial" ] || serial="$(running_targets | awk 'NR == 1 { print $1 }')"
+    [ -n "$serial" ] || die "No running emulator or connected phone. Start one with: $(cmd emulator-start.sh)"
   fi
   export ANDROID_SERIAL="$serial"
 }
+
+# True when the target is an emulator (some commands need the emulator console).
+is_emulator() { [[ "${1:-$ANDROID_SERIAL}" == emulator-* ]]; }
 
 # --- Device profiles and AVD creation --------------------------------------------
 PROFILES="phone small large tablet foldable"
