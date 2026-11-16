@@ -118,6 +118,7 @@ All reversible. Reset what you change.
 | `font-scale 1.3\|reset\|status` | Accessibility text size (0.85–2.0). |
 | `animations on\|off` | System animations. |
 | `network on\|off\|status` | Wi-Fi + mobile data. Metro keeps working (adb). |
+| `network gprs\|edge\|3g\|4g\|full` | Slow-network profile (speed + latency): gprs ~58 kbit/s, edge ~470 kbit/s, 3g ~14 Mbit/s, 4g ~173 Mbit/s; `full` removes limits. Emulators only. |
 | `airplane on\|off\|status` | Airplane mode. |
 | `location LAT LON` | GPS position, e.g. `location 37.422 -122.084`. |
 | `battery LEVEL\|unplug\|charge\|reset\|status` | Fake battery level / charging. |

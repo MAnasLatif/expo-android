@@ -107,8 +107,9 @@ to important elements. It is the most stable selector.
 - **Keyboard**: `fill`, `tap-text` and `scroll` hide the on-screen keyboard
   first. Before a raw `swipe`, run `expoemu hide-keyboard`, because a swipe
   over the keyboard types text.
-- **Offline testing**: `expoemu network off` cuts the app's internet, but
-  Metro keeps working over adb.
+- **Offline / slow network**: `expoemu network off` cuts the app's internet,
+  and `network edge|3g` throttles it (restore with `network on` / `network
+  full`). Metro keeps working over adb in both cases.
 - **Fresh state**: `expoemu app clear` wipes storage (AsyncStorage,
   SecureStore, permissions) and reopens the project.
 - **Rotation** has no effect if `app.json` locks `"orientation"`.

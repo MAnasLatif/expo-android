@@ -10,7 +10,7 @@ exits 0 (run `expoemu up --no-animations` first if it doesn't).
 - [Navigate long screens and lists](#navigate-long-screens-and-lists)
 - [Debug a red screen or crash](#debug-a-red-screen-or-crash)
 - [Start from a fresh install](#start-from-a-fresh-install)
-- [Offline and flaky network](#offline-and-flaky-network)
+- [Offline and flaky network](#offline-and-flaky-network) (incl. slow 2G/3G)
 - [Dark mode, large text, rotation, RTL](#dark-mode-large-text-rotation-rtl)
 - [Permissions](#permissions)
 - [Deep links](#deep-links)
@@ -86,6 +86,16 @@ expoemu wait-for "Latest posts" --timeout 20
 ```
 
 `expoemu airplane on|off` tests the airplane-mode path.
+
+Slow connections (loading states, timeouts, retries):
+
+```bash
+expoemu network edge                      # ~470 kbit/s, 80–400 ms latency (also: gprs, 3g, 4g)
+expoemu tap-text "Refresh"
+expoemu screenshot slow-loading           # spinner / skeleton visible?
+expoemu wait-for "Latest posts" --timeout 60
+expoemu network full                      # always restore
+```
 
 ## Dark mode, large text, rotation, RTL
 

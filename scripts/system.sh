@@ -13,6 +13,8 @@
 # CONNECTIVITY
 #   network on|off|status              Wi-Fi + mobile data (Metro keeps working:
 #                                      it runs over adb, not the network)
+#   network gprs|edge|3g|4g|full       slow-network profile: speed + latency
+#                                      (emulators; `full` removes the limits)
 #   airplane on|off|status             airplane mode
 #
 # SENSORS & DEVICE
@@ -89,12 +91,31 @@ case "$cmd" in
 
   # --- Connectivity -------------------------------------------------------------
   network)
-    on_off "${1:-}"
-    case "$1" in
+    case "${1:-}" in
       on)  sh svc wifi enable; sh svc data enable; ok "Network on (Wi-Fi + mobile data)" ;;
       off) sh svc wifi disable; sh svc data disable
            ok "Network off — the app is offline; Metro still works via adb" ;;
-      status) echo "$(get cmd wifi status | head -1); mobile_data=$(get settings get global mobile_data)" ;;
+      status)
+        echo "$(get cmd wifi status | head -1); mobile_data=$(get settings get global mobile_data)"
+        # Speed/latency profile (emulator console); phones have no console.
+        if is_emulator; then adb_host emu network status 2>/dev/null | tr -d '\r' | sed -n '2,5p'; fi ;;
+      gprs|edge|3g|4g|full)
+        # Throttle the emulator's modem (speed + latency). Metro is unaffected:
+        # it is tunnelled over adb, so the app loads normally but its own
+        # network requests are slow — exactly what you want to test.
+        is_emulator || die "Network speed profiles need an emulator (phones use their real network)"
+        case "$1" in
+          gprs) speed=gprs; delay=gprs ;;    # ~58 kbit/s, 150–550 ms
+          edge) speed=edge; delay=edge ;;    # ~470 kbit/s, 80–400 ms
+          3g)   speed=hsdpa; delay=umts ;;  # 3G/HSPA: ~14 Mbit/s down, 35–200 ms ('umts' speed is only 384 kbit/s)
+          4g)   speed=lte;   delay=20:60 ;; # ~173 Mbit/s down, 20–60 ms
+          full) speed=full;  delay=none ;;  # no limits (default)
+        esac
+        [[ "$(adb_host emu network speed "$speed" 2>&1)" == *OK* ]] || die "Emulator rejected network speed $speed"
+        [[ "$(adb_host emu network delay "$delay" 2>&1)" == *OK* ]] || die "Emulator rejected network delay $delay"
+        if [ "$1" = full ]; then ok "Network speed: full (no throttling)"
+        else ok "Network speed: $1 — reset with: $(cmd system.sh | sed 's/ help$//') network full"; fi ;;
+      *) die "usage: network on|off|status|gprs|edge|3g|4g|full" ;;
     esac ;;
   airplane)
     on_off "${1:-}"

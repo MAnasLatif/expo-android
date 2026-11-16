@@ -160,6 +160,7 @@ wins over a partial one.
 | `rotate portrait\|landscape\|auto` | Orientation (apps locked in `app.json` stay put) |
 | `dark-mode on\|off` · `font-scale 1.3\|reset` · `animations on\|off` | Display |
 | `network on\|off` · `airplane on\|off` | Offline testing. Metro keeps working over adb |
+| `network edge\|3g\|4g\|gprs\|full` | Slow network: real speed + latency limits (`full` = back to normal) |
 | `location 37.42 -122.08` · `battery 15\|unplug\|charge\|reset` | Sensors |
 | `notifications open\|close\|settings` | Notification shade, quick settings |
 | `permission grant\|revoke\|list [PERM]` | Runtime permissions, e.g. `permission grant CAMERA` |
