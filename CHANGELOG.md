@@ -6,6 +6,8 @@ the project uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-16
+
 ### Added
 
 - `npx expoemu setup` is the only `npx` you ever type. Setup also installs the
