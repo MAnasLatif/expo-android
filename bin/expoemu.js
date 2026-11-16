@@ -17,6 +17,7 @@
 const { spawnSync } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
+const updates = require('./update-check.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const SCRIPTS = path.join(ROOT, 'scripts');
@@ -159,7 +160,12 @@ function runScript(script, args, extraEnv = {}) {
   const r = spawnSync('bash', [file, ...args], {
     stdio: 'inherit',
     cwd: process.cwd(),
-    env: { ...process.env, EXPOEMU_CLI: '1', EXPOEMU_CMD: CMD, ...extraEnv },
+    env: {
+      ...process.env, EXPOEMU_CLI: '1', EXPOEMU_CMD: CMD,
+      // lets `status` mention a newer release (read from the daily cache)
+      EXPOEMU_UPDATE_AVAILABLE: updates.disabled() ? '' : (updates.availableUpdate(pkg.version) || ''),
+      ...extraEnv,
+    },
   });
   if (r.error) {
     console.error(`expoemu: failed to run bash: ${r.error.message}`);
@@ -219,6 +225,23 @@ function extractDevice(argv) {
 }
 
 function main(argv) {
+  const code = dispatch(argv);
+  notifyUpdate(argv);
+  return code;
+}
+
+// After the command: refresh the version cache in the background (at most
+// once a day) and, in an interactive terminal only, mention a newer release.
+function notifyUpdate(argv) {
+  const cmd = extractDevice(argv).rest[0];
+  const skip = ['update', 'install', 'uninstall', '-v', '--version', 'version'];
+  if (updates.disabled() || skip.includes(cmd) || process.platform !== 'darwin') return;
+  updates.refreshInBackground();
+  const latest = updates.availableUpdate(pkg.version);
+  if (latest && process.stderr.isTTY) console.error(`\n${updates.updateMessage(latest, pkg.version, CMD)}`);
+}
+
+function dispatch(argv) {
   const { device, rest } = extractDevice(argv);
   if (device) process.env.EXPOEMU_DEVICE = device;
   const [cmd, ...args] = rest;
@@ -259,4 +282,4 @@ if (require.main === module) {
   process.exitCode = main(process.argv.slice(2));
 }
 
-module.exports = { COMMANDS, HELP, main, extractDevice, commandPrefix };
+module.exports = { COMMANDS, HELP, main, dispatch, extractDevice, commandPrefix };

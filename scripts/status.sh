@@ -14,6 +14,10 @@ fail() { printf '%s ✗%s %s\n' "$C_RED" "$C_RESET" "$1" >&2; FAIL=1; }
 note() { warn "$1"; }
 
 echo "Expo Emulator status" >&2
+if [ -n "${EXPOEMU_UPDATE_AVAILABLE:-}" ]; then
+  if [ "${EXPOEMU_CMD:-}" = expoemu ]; then how="expoemu update"; else how="npx expoemu@latest <command>"; fi
+  note "expoemu $EXPOEMU_UPDATE_AVAILABLE is available — update with: $how"
+fi
 
 # --- Host SDK ------------------------------------------------------------------
 if [ -x "$ADB" ] && [ -x "$EMULATOR_BIN" ]; then

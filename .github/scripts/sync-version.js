@@ -18,31 +18,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const SEMVER = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/;
-
-// Semantic Versioning 2.0 precedence: -1 if a < b, 0 if equal, 1 if a > b.
-function compare(a, b) {
-  const pa = SEMVER.exec(a), pb = SEMVER.exec(b);
-  if (!pa || !pb) throw new Error(`not a version: ${!pa ? a : b}`);
-  for (let i = 1; i <= 3; i++) {
-    const d = Number(pa[i]) - Number(pb[i]);
-    if (d) return Math.sign(d);
-  }
-  const ra = pa[4], rb = pb[4];
-  if (!ra && !rb) return 0;
-  if (!ra) return 1;          // 1.0.0 > 1.0.0-beta.1
-  if (!rb) return -1;
-  const xa = ra.split('.'), xb = rb.split('.');
-  for (let i = 0; i < Math.max(xa.length, xb.length); i++) {
-    if (xa[i] === undefined) return -1;
-    if (xb[i] === undefined) return 1;
-    const na = /^\d+$/.test(xa[i]), nb = /^\d+$/.test(xb[i]);
-    if (na && nb) { const d = Number(xa[i]) - Number(xb[i]); if (d) return Math.sign(d); continue; }
-    if (na !== nb) return na ? -1 : 1;   // numeric identifiers sort first
-    if (xa[i] !== xb[i]) return xa[i] < xb[i] ? -1 : 1;
-  }
-  return 0;
-}
+// SemVer helpers live in bin/semver.js (shared with the CLI's update notice).
+const { SEMVER, compare } = require(path.join(ROOT, 'bin', 'semver.js'));
 
 // Move the Unreleased notes under a version heading (stable versions only).
 function updateChangelog(text, version, date) {

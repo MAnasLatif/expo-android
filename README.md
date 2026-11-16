@@ -74,6 +74,11 @@ is reinstalled.
 | `npx expoemu install` | (Re)install the `expoemu` command, e.g. after switching Node versions with nvm |
 | `expoemu uninstall` | Remove the command (your SDK, devices and settings stay) |
 
+expoemu tells you when a newer release is out: a one-line notice after a
+command in your terminal, and a note in `expoemu status`. It checks npm at
+most once a day in the background and never slows a command down. To turn it
+off, set `EXPOEMU_NO_UPDATE_CHECK=1`. It is always off in CI.
+
 Prefer not to install anything globally? Run `npx expoemu setup --no-global`,
 then prefix every command with `npx`, as in `npx expoemu up`. Teams can also
 pin a version per project with `npm i -D expoemu` and run `npx expoemu …`.

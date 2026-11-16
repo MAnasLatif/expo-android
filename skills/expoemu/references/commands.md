@@ -26,7 +26,7 @@ Add `--device NAME` (or `-d NAME`) to any command to target one device; for
 |---------|--------------|
 | `setup [--accept-licenses] [--runtime docker\|kiri] [--recreate-avd] [--skip-sdk] [--skip-docker] [--no-global]` | One-time install: isolated Android SDK + Pixel phone in `~/.expoemu`, Docker image, and the global `expoemu` command (unless `--no-global`). Idempotent. `--accept-licenses` accepts the Android SDK license (ask the user first). |
 | `install` | Install only the global `expoemu` command (npm, or Bun when run via `bunx`). Never uses sudo. |
-| `update` | Upgrade the global command to the latest release. |
+| `update` | Upgrade the global command to the latest release. `status` notes when one is available. |
 | `uninstall` | Remove the global command (SDK, devices and settings are kept). |
 | `up [--no-animations] [--headless] [--cold-boot]` | Boot the phone, start the container (installs deps on first use), start Metro, open the app in Expo Go. Honors `--device`. |
 | `down` | Stop the container, every emulator and the adb server. Image, caches and devices are kept. |
@@ -164,5 +164,6 @@ Settings file: `~/.expoemu/config.env` (git clone: repo `.env`). Useful keys:
 `APP_PACKAGE` (target app, default Expo Go), `AVD_RAM_MB`, `AVD_CORES`,
 `EMULATOR_GPU` (`host` or `swiftshader_indirect`), `CONTAINER_RUNTIME`
 (`docker` or `kiri`), `METRO_PORT` (8081), `ADB_SERVER_PORT` (5037),
-`SCREENSHOT_DIR` (`.android-screenshots`). Environment variables with the
+`SCREENSHOT_DIR` (`.android-screenshots`), `EXPOEMU_NO_UPDATE_CHECK=1` (no
+newer-version notice). Environment variables with the
 same names override the file for one command.

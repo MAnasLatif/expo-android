@@ -13,7 +13,8 @@ const BIN = path.join(ROOT, 'bin', 'expoemu.js');
 const pkg = require('../package.json');
 const { COMMANDS } = require('../bin/expoemu.js');
 
-const run = (...args) => spawnSync(process.execPath, [BIN, ...args], { encoding: 'utf8' });
+const run = (...args) => spawnSync(process.execPath, [BIN, ...args],
+  { encoding: 'utf8', env: { ...process.env, EXPOEMU_NO_UPDATE_CHECK: '1' } });
 
 test('--version prints the package version', () => {
   const r = run('--version');
