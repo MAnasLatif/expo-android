@@ -170,6 +170,14 @@ if [ "$SKIP_DOCKER" = 0 ]; then
   # PROJECT_DIR is required by compose interpolation; any dir works for a build.
   PROJECT_DIR="${PROJECT_DIR:-$REPO_ROOT}" compose build
   ok "Docker image ready"
+
+  # UI server APK: the npm package ships it; a git clone builds it once.
+  # Optional — without it UI commands use the slower uiautomator.
+  if [ ! -f "$REPO_ROOT/server/dist/expoemu-server.apk" ] && [ -f "$REPO_ROOT/server/build.sh" ]; then
+    info "Building the UI server APK (makes UI commands ~10x faster)"
+    if bash "$REPO_ROOT/server/build.sh"; then ok "UI server APK built"
+    else warn "UI server build failed — UI commands still work (slower). Retry with: server/build.sh"; fi
+  fi
 fi
 
 # --- 7. Global `expoemu` command (only when run through the CLI) --------------

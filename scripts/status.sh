@@ -6,6 +6,7 @@
 #   scripts/status.sh
 # =============================================================================
 source "$(dirname "$0")/lib/common.sh"
+source "$(dirname "$0")/lib/ui-server.sh"
 load_config
 
 FAIL=0
@@ -52,6 +53,14 @@ while read -r serial name kind <&3; do
   pkgs="$(adb_host -s "$serial" shell pm list packages host.exp.exponent 2>/dev/null || true)"
   if [[ "$pkgs" == *exponent* ]]; then pass "  Expo Go installed"
   else note "  Expo Go not installed yet ($(cmd open-app.sh) installs it)"; fi
+  export ANDROID_SERIAL="$serial"   # read by the ui_server_* helpers
+  why="$(ui_server_unavailable)"
+  if [ -z "$why" ]; then
+    if ui_server_alive; then pass "  UI server running (fast UI commands)"
+    else pass "  UI server ready (starts with the first UI command)"; fi
+  elif [ "$kind" = emulator ]; then
+    note "  UI server not used: $why — UI commands are slower"
+  fi
 done 3<<<"$emus"
 if [ -x "$ADB" ] && [ -z "$emus" ] && lsof -nP -iTCP:"$ADB_SERVER_PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   fail "No emulator running — $(cmd emulator-start.sh)"
