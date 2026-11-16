@@ -125,6 +125,7 @@ wins over a partial one.
 | `record [SECONDS] [name]` | MP4 screen recording (default 10 s, max 180) |
 | `ui [--xml]` | Elements with tap coordinates, testIDs and focused/checked/disabled flags (or raw XML) |
 | `texts` | Just the visible text |
+| `a11y [--all]` | Accessibility audit: buttons/inputs without a label (exit 1), touch targets under 48dp; `--all` adds missing testIDs |
 | `find "Text"` | Center `X Y` of an element |
 
 **Touch**

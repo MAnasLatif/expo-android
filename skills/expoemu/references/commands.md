@@ -66,6 +66,7 @@ commands work on phones, except emulator-only ones (`network` speed profiles,
 | `record [SECONDS] [name]` | MP4 screen recording (default 10 s, max 180), prints the path. |
 | `ui [--xml]` | One line per element: `centerX centerY \| text \| content-desc \| testID \| class \| flags` (flags: clickable, focused, checked, disabled). `--xml` saves the raw hierarchy and prints its path. |
 | `texts` | Visible strings only. |
+| `a11y [--all]` | Accessibility audit of the screen. `ERROR unlabeled`: clickable/input with no text, label or placeholder (exit 1). `WARN small`: touch target under 48×48dp. `--all` adds `WARN no-testid`. |
 | `find "Text"` | Center `X Y` of the element (exit 1 if absent). |
 | `size` | Screen size in pixels. |
 | `activity` | Foreground app / activity. |

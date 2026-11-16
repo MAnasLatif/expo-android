@@ -15,6 +15,7 @@ exits 0 (run `expoemu up --no-animations` first if it doesn't).
 - [OTP codes, calls and fingerprint login](#otp-codes-calls-and-fingerprint-login)
 - [Permissions](#permissions)
 - [Deep links](#deep-links)
+- [Accessibility check](#accessibility-check)
 - [Performance check](#performance-check)
 - [Phone and tablet side by side](#phone-and-tablet-side-by-side)
 - [Two users at once (chat, multiplayer)](#two-users-at-once-chat-multiplayer)
@@ -153,6 +154,17 @@ expoemu wait-for "Profile" --timeout 15
 
 In Expo Go, links use the `exp://127.0.0.1:8081/--/path` form:
 `expoemu open-url "exp://127.0.0.1:8081/--/profile/42"`.
+
+## Accessibility check
+
+```bash
+expoemu a11y            # exit 1 if a button/input has no accessible name
+expoemu a11y --all      # also list clickables without a testID
+```
+
+Fix `ERROR unlabeled` by adding `accessibilityLabel` (icons) or visible text.
+For `WARN small`, raise the touch target to 48×48dp (`hitSlop` or padding).
+Re-run after Fast Refresh, and check every screen of the flow.
 
 ## Performance check
 

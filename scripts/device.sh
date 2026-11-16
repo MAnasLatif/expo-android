@@ -18,6 +18,8 @@
 #   long-press-text "Item" [ms]  long-press an element
 #   scroll-to "Row 30" [--up] [--max N]   scroll until the element is visible
 #   texts                        list visible text only (compact)
+#   a11y [--all]                 accessibility audit: unlabeled buttons/inputs (exit 1),
+#                                small touch targets; --all also lists missing testIDs
 #   ui --xml                     save the raw view hierarchy XML, print its path
 #
 # WAIT & ASSERT (exit 0 = success, 1 = failure — usable as test steps)
@@ -99,6 +101,57 @@ ui_rows() {
       printf "%d %d | %s | %s | %s | %s | %s\n", ($x1+$x2)/2, ($y1+$y2)/2,
         $text, $h{"content-desc"}, $id, $h{class}, join(",", @f);
     }'
+}
+
+# Accessibility audit of the current screen. Prints one line per finding:
+#   ERROR  unlabeled   X Y  class  [testID]   clickable without any text/label in it
+#   ERROR  unlabeled   X Y  EditText          input without text, placeholder or label
+#   WARN   small       X Y  WxHdp             touch target under 48x48dp
+#   WARN   no-testid   X Y  "label"           clickable without a testID (with --all)
+# System UI (status/navigation bar) is skipped.
+a11y_rows() {
+  local all="$1" density min_px
+  density="$(sh wm density | tr -d '\r' | awk -F': ' '/Override/ {o=$2} /Physical/ {p=$2} END {print (o ? o : p)}')"
+  min_px=$(( 48 * ${density:-420} / 160 ))
+  sh uiautomator dump /sdcard/window_dump.xml >/dev/null 2>&1 || die "uiautomator dump failed (is the screen locked or animating?)"
+  adb_host exec-out cat /sdcard/window_dump.xml | perl -e '
+    my ($min, $density, $all) = @ARGV; local $/; my $xml = <STDIN>;
+    my @stack;
+    sub done {
+      my $n = pop @stack;
+      $stack[-1]{label} ||= $n->{label} if @stack;        # a child label names its parent
+      my %h = %{ $n->{h} };
+      return if ($h{package} // "") eq "com.android.systemui";
+      my ($x1,$y1,$x2,$y2) = ($h{bounds} // "") =~ /\[(\d+),(\d+)\]\[(\d+),(\d+)\]/ or return;
+      my ($w, $hh) = ($x2-$x1, $y2-$y1); return if $w <= 0 || $hh <= 0;
+      my ($cx, $cy) = (int(($x1+$x2)/2), int(($y1+$y2)/2));
+      my $cls = $h{class} // ""; $cls =~ s/^.*\.//;
+      my $id = $h{"resource-id"} // ""; $id = "" if $id =~ /:id\//;
+      my $clickable = ($h{clickable} // "") eq "true";
+      my $own = length($h{text}) || length($h{"content-desc"}) || length($h{hint} // "");
+      if ($cls eq "EditText" && !$own) {
+        printf "ERROR  unlabeled  %4d %4d  %s%s  input has no text, placeholder or label\n", $cx, $cy, $cls, $id ? " [$id]" : "";
+      } elsif ($clickable && !$n->{label}) {
+        printf "ERROR  unlabeled  %4d %4d  %s%s  clickable without text or accessibilityLabel\n", $cx, $cy, $cls, $id ? " [$id]" : "";
+      }
+      if ($clickable && ($w < $min || $hh < $min)) {
+        printf "WARN   small      %4d %4d  %dx%ddp%s  touch target under 48x48dp\n", $cx, $cy,
+          $w * 160 / $density, $hh * 160 / $density, $id ? " [$id]" : "";
+      }
+      if ($all && $clickable && !$id && ($h{package} // "") ne "") {
+        printf "WARN   no-testid  %4d %4d  %s  clickable without a testID\n", $cx, $cy, $n->{name} // $cls;
+      }
+    }
+    while ($xml =~ /<node ([^>]*?)(\/?)>|<\/node>/g) {
+      if (defined $1) {
+        my ($attrs, $self) = ($1, $2); my %h;
+        $h{$1} = $2 while $attrs =~ /([\w-]+)="([^"]*)"/g;
+        my $name = length($h{text}) ? $h{text} : ($h{"content-desc"} // "");
+        push @stack, { h => \%h, name => $name ? "\"$name\"" : undef,
+                       label => (length($h{text}) || length($h{"content-desc"}) || length($h{hint} // "")) ? 1 : 0 };
+        done() if $self eq "/";
+      } else { done() if @stack }
+    }' "$min_px" "${density:-420}" "$all"
 }
 
 # Center "X Y" of the element matching $1 in text, content-desc or resource-id
@@ -194,6 +247,16 @@ case "$cmd" in
     fi
     echo "# centerX centerY | text | content-desc | testID | class | flags"
     ui_rows ;;
+  a11y)
+    all=0; [ "${1:-}" = --all ] && all=1
+    report="$(a11y_rows "$all")"
+    errors="$(printf '%s\n' "$report" | grep -c '^ERROR' || true)"
+    warnings="$(printf '%s\n' "$report" | grep -c '^WARN' || true)"
+    [ -n "$report" ] && printf '%s\n' "$report"
+    if [ "$errors" -gt 0 ]; then
+      die "Accessibility: $errors problem(s), $warnings warning(s) — add accessibilityLabel (or visible text) to the elements above"
+    fi
+    ok "Accessibility: no problems$([ "$warnings" -gt 0 ] && echo ", $warnings warning(s)")" ;;
   texts)
     # Visible strings only (text or accessibility label), de-duplicated.
     ui_rows | awk -F' \\| ' '{ s = length($2) ? $2 : $3; if (length(s) && !seen[s]++) print s }' ;;

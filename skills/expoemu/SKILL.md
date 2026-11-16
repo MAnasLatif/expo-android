@@ -62,6 +62,7 @@ boot). `--no-animations` keeps screenshots stable.
 expoemu screenshot home     # prints an absolute PNG path, so Read it to see the screen
 expoemu ui                  # every element: "centerX centerY | text | label | testID | class | flags"
 expoemu texts               # just the visible strings
+expoemu a11y                # accessibility audit (exit 1 on unlabeled buttons/inputs)
 ```
 
 **4. Act.** Prefer selectors over pixel coordinates:

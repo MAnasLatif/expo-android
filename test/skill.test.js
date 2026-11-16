@@ -82,7 +82,7 @@ test('every `expoemu <cmd>` / `npx expoemu <cmd>` in the skill is a real CLI com
   let checked = 0;
   for (const text of skillTexts) {
     for (const snippet of codeSnippets(text)) {
-      for (const m of snippet.matchAll(/(?:^|&&\s*|;\s*)\s*(?:npx (?:-y )?)?expoemu (?:--device \S+ )?([a-z][a-z-]*)/g)) {
+      for (const m of snippet.matchAll(/(?:^|&&\s*|;\s*)\s*(?:npx (?:-y )?)?expoemu (?:--device \S+ )?([a-z][a-z0-9-]*)/g)) {
         assert.ok(CLI.has(m[1]), `unknown command in skill: "${snippet.trim()}"`);
         checked++;
       }

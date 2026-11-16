@@ -27,7 +27,7 @@ const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
 // Each list below forwards `expoemu <cmd> …` to `<script> <cmd> …`.
 const DEVICE_CMDS = [ // scripts/device.sh — touch, elements, waits, keys
   'tap', 'double-tap', 'long-press', 'swipe', 'drag', 'scroll',
-  'ui', 'texts', 'find', 'tap-text', 'long-press-text', 'scroll-to',
+  'ui', 'texts', 'a11y', 'find', 'tap-text', 'long-press-text', 'scroll-to',
   'wait-for', 'wait-gone', 'assert-text', 'assert-no-text',
   'text', 'clear', 'fill', 'hide-keyboard', 'key', 'back', 'home', 'recents',
   'enter', 'lock', 'unlock',
@@ -97,6 +97,7 @@ SEE THE SCREEN
   record [SECONDS] [name]           MP4 screen recording (max 180 s)
   ui [--xml]                        elements with tap coordinates (or raw XML)
   texts                             visible text only
+  a11y [--all]                      accessibility audit (exit 1 on problems)
   find "Text"                       center "X Y" of an element
 
 TOUCH
