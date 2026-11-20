@@ -35,6 +35,31 @@ expoemu up          # then, in any Expo project: phone boots, Metro starts, your
 └───────────────────────────┘                └───────────────────────────┘
 ```
 
+## Why expoemu?
+
+**The problem:** testing an Expo app on Android from a Mac usually means
+installing Android Studio, a JDK and a system-wide Android SDK, then fixing
+`ANDROID_HOME`, emulator images and adb versions, all just to open Expo Go.
+And your AI coding agent still can't see or tap the screen.
+
+**expoemu** gives you a working Android phone for any Expo project in two
+commands, keeps your Mac clean, and gives you and your agent a CLI to
+screenshot, tap, type, wait for text, read logs and save repeatable flows.
+
+| | expoemu | Android Studio | Expo Orbit | Maestro / Detox |
+|---|---|---|---|---|
+| What it is | CLI: emulator + Expo toolchain + device actions | Full IDE | Menu-bar app to launch builds on devices | UI test frameworks |
+| Needs Android Studio / system-wide SDK | No (isolated SDK in `~/.expoemu`) | Yes | Needs an Android SDK set up | Needs an emulator/device set up |
+| Needs Java on your Mac | No (JDK lives in Docker) | Bundled | — | Detox: yes (native build) |
+| Starts Metro and opens your app | Yes, `expoemu up` | Manual | Opens builds / Expo Go | No |
+| AI agent can screenshot, tap and check the screen | Yes, plain commands + [Agent Skill](#ai-assistant-skill-let-your-agent-test-the-app) | No | No | Through their own test files |
+| Saved flows / visual baselines | [Flows](#saved-tests-flows) + [screenshot diffs](#visual-regression-screenshot-baselines) | — | — | Yes, full test suites |
+| Remove everything | `expoemu cleanup --all` | Manual | Manual | Manual |
+
+Use expoemu when you want a fast, disposable Android phone for day-to-day Expo
+work and agent-driven checks. Reach for Maestro or Detox when you need a large
+E2E suite in CI; they can run against the expoemu emulator too.
+
 ## Requirements
 
 - macOS 13+ on **Intel or Apple Silicon**
