@@ -36,6 +36,25 @@ test('unknown command exits 2 with a hint', () => {
   assert.match(r.stderr, /unknown command/);
 });
 
+test('unknown command suggests the closest one', () => {
+  const r = run('screnshot');
+  assert.strictEqual(r.status, 2);
+  assert.match(r.stderr, /Did you mean: \S*expoemu screenshot\?/);
+  const far = run('definitely-not-a-command');
+  assert.doesNotMatch(far.stderr, /Did you mean/);
+});
+
+test('suggestCommand handles typos, swaps and unrelated input', () => {
+  const { suggestCommand } = require('../bin/expoemu.js');
+  assert.strictEqual(suggestCommand('screenshto'), 'screenshot');   // swapped letters
+  assert.strictEqual(suggestCommand('tap-txt'), 'tap-text');        // missing letter
+  assert.strictEqual(suggestCommand('STATUS'), 'status');           // case
+  assert.strictEqual(suggestCommand('uup'), 'up');                  // short, 1 edit
+  assert.strictEqual(suggestCommand('xyz'), null);                  // too far for a short word
+  assert.strictEqual(suggestCommand('--nope'), null);               // flags are never guessed
+  assert.strictEqual(suggestCommand(''), null);
+});
+
 test('every command maps to an existing script', () => {
   for (const [name, { script }] of Object.entries(COMMANDS)) {
     assert.ok(fs.existsSync(path.join(ROOT, 'scripts', script)), `${name} -> scripts/${script} missing`);
