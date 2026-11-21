@@ -168,6 +168,41 @@ function commandPrefix(binPath = process.argv[1] || '', cwd = process.cwd()) {
 }
 const CMD = commandPrefix();
 
+// Every name `expoemu <cmd>` accepts, for "did you mean" hints.
+const ALL_COMMANDS = [...BUILTINS, ...Object.keys(COMMANDS), 'help', 'version'];
+
+// Levenshtein distance, with a swap of two neighbouring letters counting as one
+// edit (so "scrnehsot"-style transpositions still match).
+function editDistance(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + cost);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[a.length][b.length];
+}
+
+// Closest known command to a typo, or null when nothing is reasonably close.
+// Short inputs allow 1 edit, longer ones 2; ties go to the first in the table.
+function suggestCommand(input, names = ALL_COMMANDS) {
+  if (!input || input.startsWith('-')) return null;
+  const typed = input.toLowerCase();
+  const max = typed.length <= 4 ? 1 : 2;
+  let best = null;
+  let bestDist = Infinity;
+  for (const name of names) {
+    const dist = editDistance(typed, name);
+    if (dist < bestDist) { best = name; bestDist = dist; }
+  }
+  return bestDist <= max ? best : null;
+}
+
 function runScript(script, args, extraEnv = {}) {
   const file = path.join(SCRIPTS, script);
   // Invoke through bash so executable bits don't matter after npm install.
@@ -271,7 +306,9 @@ function dispatch(argv) {
   }
   const known = BUILTINS.includes(cmd) || Object.hasOwn(COMMANDS, cmd);
   if (!known) {
-    console.error(`expoemu: unknown command "${cmd}". Run: ${CMD} help`);
+    const guess = suggestCommand(cmd);
+    const hint = guess ? ` Did you mean: ${CMD} ${guess}?` : '';
+    console.error(`expoemu: unknown command "${cmd}".${hint} Run: ${CMD} help`);
     return 2;
   }
   // Checked at runtime, not via package.json "os": a project may list expoemu as a
@@ -299,4 +336,4 @@ if (require.main === module) {
   process.exitCode = main(process.argv.slice(2));
 }
 
-module.exports = { COMMANDS, BUILTINS, HELP, main, dispatch, extractDevice, commandPrefix };
+module.exports = { COMMANDS, BUILTINS, HELP, main, dispatch, extractDevice, commandPrefix, suggestCommand };
