@@ -31,14 +31,17 @@ r/expo, Stack Overflow [expo]+[android-emulator], dev.to, Hacker News. (Expo Dis
 ## Backlog (agent keeps this updated; top = next)
 1. Demo GIF/video at the top of README — NEEDS ANAS. Shot list ready: growth/DEMO_SHOTLIST.md
 2. Launch kit drafts: Show HN, r/reactnative, r/expo, dev.to article, X/LinkedIn thread (agent drafts into growth/launch/)
-3. `good first issue` labels + 3–5 small issues so contributors can join
+3. `good first issue` label exists already — write 3–5 small issues (ideas: `--json` output for `devices`/`status`; `expoemu help <cmd>` per-command help; ShellCheck in CI if missing) so contributors can join
 4. Awesome lists (awesome-react-native, awesome-expo, awesome-claude-code, awesome-mcp) — draft PR text for Anas
-5. Get listed on skills directories (skills.sh, claude-plugins.dev, tessl, smithery) — agents' skills already show up there for "android emulator" searches; expoemu's skill should too
-6. MCP server wrapper so agents find expoemu through MCP directories (competitors seen: callstack/agent-device, Android-Ui-MCP, expo-android MCP)
-7. Wider audience: Expo dev builds (not only Expo Go), Linux host investigation
+5. Expo's own agent docs (docs.expo.dev/agents/…) list agent-device and Argent as ways for agents to drive emulators — draft a docs PR text for Anas proposing an expoemu page/mention (Anas submits; agent never PRs expo/expo)
+6. Get listed on skills directories (skills.sh, claude-plugins.dev, tessl, smithery) — agents' skills already show up there for "android emulator" searches; expoemu's skill should too
+7. MCP server wrapper so agents find expoemu through MCP directories (competitors seen: callstack/agent-device, Android-Ui-MCP, expo-android MCP)
+8. Wider audience: Expo dev builds (not only Expo Go), Linux host investigation — most agent-verify planning issues found on GitHub run on Linux hosts (skrymer-ai#78, agentic-system#874), so Linux support would widen reach a lot
+- DONE 2026-11-21: "Did you mean …?" typo hints for unknown commands → PR #9
 - DONE 2026-11-20: README "Why expoemu?" + comparison table → PR #8
 
 ## Notes from runs
+- 2026-11-21: GitHub search for live threads mostly surfaces other projects' internal planning issues (agents choosing a mobile driver), not people asking for help — replying there would be unsolicited. Real askers are more likely on Reddit/SO/Expo Discord, but web search returns mostly old tutorials. Agent-device (Callstack) + Maestro MCP are what people pick today; they're the comparison to win.
 - Cross-repo GitHub reads are blocked for this scheduled task (403) and WebFetch of github.com issue pages needs approval → thread leads can't be fully verified. Fix: Anas adds read access / approves github.com fetches, or the agent relies on search snippets.
 - npm downloads API is blocked from the shell (proxy 403); WebFetch npmjs.com also needs approval.
 - Search for live threads works best via `gh api search/issues` with `is:issue is:open created:>DATE` (needs is:issue).
